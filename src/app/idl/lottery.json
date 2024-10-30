@@ -1,0 +1,723 @@
+{
+  "address": "B4Y1J9ezgBFbFZyrXbVKFeWLH7Dwuz1v6sRDB1xvsgmU",
+  "metadata": {
+    "name": "lottery",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "buy_ticket",
+      "discriminator": [
+        11,
+        24,
+        17,
+        193,
+        168,
+        116,
+        164,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "lottery_info",
+          "writable": true
+        },
+        {
+          "name": "user",
+          "writable": true
+        },
+        {
+          "name": "dev",
+          "writable": true
+        },
+        {
+          "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        },
+        {
+          "name": "ticket_number",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "calculate_user_prize",
+      "discriminator": [
+        133,
+        130,
+        51,
+        152,
+        70,
+        173,
+        6,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "lottery_info",
+          "writable": true
+        },
+        {
+          "name": "user",
+          "writable": true
+        },
+        {
+          "name": "dev",
+          "writable": true
+        },
+        {
+          "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [],
+      "returns": "u64"
+    },
+    {
+      "name": "claim_dev",
+      "discriminator": [
+        67,
+        144,
+        21,
+        238,
+        28,
+        66,
+        170,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "info",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_mkt",
+      "discriminator": [
+        53,
+        184,
+        183,
+        98,
+        55,
+        166,
+        122,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "info",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_prize",
+      "discriminator": [
+        157,
+        233,
+        139,
+        121,
+        246,
+        62,
+        234,
+        235
+      ],
+      "accounts": [
+        {
+          "name": "lottery_info",
+          "writable": true
+        },
+        {
+          "name": "user",
+          "writable": true
+        },
+        {
+          "name": "dev",
+          "writable": true
+        },
+        {
+          "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "lottery_info",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        },
+        {
+          "name": "random_outside",
+          "type": "bool"
+        },
+        {
+          "name": "ticket_price",
+          "type": "u64"
+        },
+        {
+          "name": "max_tickets",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "initialize_dev",
+      "discriminator": [
+        15,
+        193,
+        237,
+        136,
+        56,
+        226,
+        254,
+        16
+      ],
+      "accounts": [
+        {
+          "name": "dev",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_mkt",
+      "discriminator": [
+        47,
+        23,
+        98,
+        2,
+        87,
+        48,
+        25,
+        205
+      ],
+      "accounts": [
+        {
+          "name": "mkt",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_user",
+      "discriminator": [
+        111,
+        17,
+        185,
+        250,
+        60,
+        122,
+        38,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "pick_winner",
+      "discriminator": [
+        227,
+        62,
+        25,
+        73,
+        132,
+        106,
+        68,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "lottery_info",
+          "writable": true
+        },
+        {
+          "name": "user",
+          "writable": true
+        },
+        {
+          "name": "dev",
+          "writable": true
+        },
+        {
+          "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        },
+        {
+          "name": "entropy",
+          "type": "u64"
+        },
+        {
+          "name": "batch_size",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "rollover",
+      "discriminator": [
+        147,
+        98,
+        248,
+        23,
+        82,
+        182,
+        25,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "old_lottery",
+          "writable": true
+        },
+        {
+          "name": "new_lottery",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Dev",
+      "discriminator": [
+        237,
+        11,
+        182,
+        3,
+        72,
+        112,
+        219,
+        227
+      ]
+    },
+    {
+      "name": "LotteryInfo",
+      "discriminator": [
+        155,
+        121,
+        172,
+        163,
+        172,
+        81,
+        158,
+        119
+      ]
+    },
+    {
+      "name": "Mkt",
+      "discriminator": [
+        51,
+        128,
+        239,
+        8,
+        92,
+        204,
+        191,
+        74
+      ]
+    },
+    {
+      "name": "UserTicket",
+      "discriminator": [
+        180,
+        163,
+        8,
+        176,
+        85,
+        62,
+        213,
+        128
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "WrongNumber",
+      "msg": "Number specified is in a wrong range"
+    },
+    {
+      "code": 6001,
+      "name": "MissingBalOnLottery",
+      "msg": "Lottery out of balance to run"
+    },
+    {
+      "code": 6002,
+      "name": "NotOP",
+      "msg": "Not an OP wallet"
+    },
+    {
+      "code": 6003,
+      "name": "ZeroAccount",
+      "msg": "Account key cannot be zero"
+    },
+    {
+      "code": 6004,
+      "name": "TicketMismatch",
+      "msg": "Ticket mismatch lotterry and user different ticket numbers"
+    },
+    {
+      "code": 6005,
+      "name": "LotteryClosed",
+      "msg": "Lottery closed"
+    },
+    {
+      "code": 6006,
+      "name": "LotteryNotClosed",
+      "msg": "Lottery not closed"
+    },
+    {
+      "code": 6007,
+      "name": "NotFullProcessed",
+      "msg": "Not full processed winners"
+    },
+    {
+      "code": 6008,
+      "name": "NotClaimableDev",
+      "msg": "Claim wallet is not the dev"
+    },
+    {
+      "code": 6009,
+      "name": "NotClaimableMkt",
+      "msg": "Claim wallet is not the mkt"
+    }
+  ],
+  "types": [
+    {
+      "name": "Dev",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "key",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LotteryInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "default",
+            "type": "pubkey"
+          },
+          {
+            "name": "tickets",
+            "type": {
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "tickets_count",
+            "type": {
+              "vec": "u16"
+            }
+          },
+          {
+            "name": "full_match",
+            "type": "u32"
+          },
+          {
+            "name": "full_match_count",
+            "type": "u16"
+          },
+          {
+            "name": "partial5_match",
+            "type": {
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "partial5_count",
+            "type": "u16"
+          },
+          {
+            "name": "partial4_match",
+            "type": {
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "partial4_count",
+            "type": "u16"
+          },
+          {
+            "name": "partial3_match",
+            "type": {
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "partial3_count",
+            "type": "u16"
+          },
+          {
+            "name": "full_processed",
+            "type": "bool"
+          },
+          {
+            "name": "random_outside",
+            "type": "bool"
+          },
+          {
+            "name": "ticket_price",
+            "type": "u64"
+          },
+          {
+            "name": "max_tickets",
+            "type": "u16"
+          },
+          {
+            "name": "match_kind",
+            "type": "u8"
+          },
+          {
+            "name": "lottery_id",
+            "type": "u64"
+          },
+          {
+            "name": "win_number",
+            "type": "u64"
+          },
+          {
+            "name": "process_index",
+            "type": "u64"
+          },
+          {
+            "name": "final_bal",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Mkt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "key",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserTicket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bought_tickets",
+            "type": {
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "bought_tickets_count",
+            "type": {
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "lottery_id",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
