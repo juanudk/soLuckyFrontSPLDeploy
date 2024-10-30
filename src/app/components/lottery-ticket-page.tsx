@@ -13,6 +13,8 @@ import {
   commitmentLevel,
   lotteryProgramId,
   lotteryProgramInterface,
+  mkt,
+  dev
 } from "../utils/constants";
 import { Lottery } from '../types/lottery';
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -44,16 +46,16 @@ export default function Component() {
 
   const buyTicket = async () => {
     // Validate all fields are filled and numbers are between 1 and 99
-    if (newTicketNumbers.some(num => num === '' || parseInt(num) < 1 || parseInt(num) > 99)) {
+    if (newTicketNumbers.some(num => num === '' || parseInt(num) < 0 || parseInt(num) > 9)) {
       alert('Please fill all fields with numbers between 1 and 99')
       return
     }
-    if(wallet){
+    if (wallet) {
       const newTicket = {
         id: userTickets.length + 1,
         numbers: newTicketNumbers.map(num => parseInt(num)),
       }
-      const key1 = new anchor.BN(1)
+      const lotteryNumber = new anchor.BN(1)
       setUserTickets([...userTickets, newTicket])
       const provider = new AnchorProvider(connection, wallet, {
         preflightCommitment: commitmentLevel,
@@ -68,12 +70,25 @@ export default function Component() {
         provider
       );
 
-      const seedsUser = [key1.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
       let valueAccountUser = PublicKey.findProgramAddressSync(
         seedsUser,
         program.programId
       )[0];
-      await program.methods.initializeUser(key1).accounts({user:valueAccountUser}).rpc()
+      const bal = await connection.getBalance(valueAccountUser);
+      const chosedNumber =  new anchor.BN("1"+newTicketNumbers.join(""))
+      if (bal == 0) {
+        console.log(`Account ${valueAccountUser} should be initialized`)
+        await program.methods.initializeUser(lotteryNumber).accounts({ user: valueAccountUser }).rpc()
+      } else {
+        console.log(`Account ${valueAccountUser} already initialized`)
+      }
+      const seeds = [new anchor.BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
+      let valueAccount = anchor.web3.PublicKey.findProgramAddressSync(
+        seeds,
+        program.programId
+      )[0];
+      await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({ lotteryInfo: valueAccount, dev, mkt, user: valueAccountUser }).rpc()
 
 
       setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
