@@ -2,7 +2,7 @@
 import { useState, ChangeEvent } from 'react'
 import dynamic from 'next/dynamic';
 import { ChevronUp, ChevronDown } from "lucide-react"
-import { Program, AnchorProvider, web3 } from "@project-serum/anchor";
+import { Program, AnchorProvider, web3 } from "@coral-xyz/anchor";
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
@@ -16,6 +16,7 @@ import {
 } from "../utils/constants";
 import { Lottery } from '../types/lottery';
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 
 export default function Component() {
   const [isHidden, setIsHidden] = useState(false)
@@ -63,13 +64,12 @@ export default function Component() {
       /* create the program interface combining the idl, program Id, and provider */
       console.log("wallet")
       const program = new Program(
-        lotteryProgramInterface,
-        lotteryProgramId,
+        lotteryProgramInterface as any,
         provider
       );
 
-      const seedsUser = [key1.toArrayLike(Buffer, "le", 8), wallet.publicKey];
-      let valueAccountUser = anchor.web3.PublicKey.findProgramAddressSync(
+      const seedsUser = [key1.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+      let valueAccountUser = PublicKey.findProgramAddressSync(
         seedsUser,
         program.programId
       )[0];

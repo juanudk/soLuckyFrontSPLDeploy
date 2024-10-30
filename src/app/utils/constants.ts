@@ -9,4 +9,4 @@ export const connection = new Connection(endpoint, commitmentLevel);
 
 /* Constants for the Deployed "Hello World" Program */
 export const lotteryProgramId = new PublicKey(idl.address);
-export const lotteryProgramInterface = JSON.parse(JSON.stringify(idl));
+export const lotteryProgramInterface = idl;

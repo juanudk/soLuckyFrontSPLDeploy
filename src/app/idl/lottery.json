@@ -1,5 +1,9 @@
 {
-  "address": "B4Y1J9ezgBFbFZyrXbVKFeWLH7Dwuz1v6sRDB1xvsgmU",
+  "address": "7LxvHtZUd83K9fWTyRZVxH9448k44GteAHL9u1sQy69s",
+  "name": "lottery",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor",
   "metadata": {
     "name": "lottery",
     "version": "0.1.0",
