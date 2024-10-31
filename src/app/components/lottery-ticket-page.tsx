@@ -33,16 +33,22 @@ export default function Component() {
   ])
   const [newTicketNumbers, setNewTicketNumbers] = useState(['', '', '', '', '', ''])
 
-  const claimPrize = () => {
-    setIsClaimed(true)
-    // In a real application, you would call an API or smart contract here
-  }
+  //const claimPrize = () => {
+    //setIsClaimed(true)
+    //// In a real application, you would call an API or smart contract here
+  //}
 
   const handleNumberChange = (index: number, value: string) => {
     const newNumbers = [...newTicketNumbers]
     newNumbers[index] = value
     setNewTicketNumbers(newNumbers)
   }
+
+  const handlePickWinner = () => {
+    const key = 1; // Replace with the actual key value needed
+    const batchSize = 10; // Replace with the desired batch size
+    pickWinner(key, batchSize);
+  };
 
   const buyTicket = async () => {
     // Validate all fields are filled and numbers are between 1 and 99
@@ -56,7 +62,7 @@ export default function Component() {
         numbers: newTicketNumbers.map(num => parseInt(num)),
       }
       const lotteryNumber = new anchor.BN(1)
-      setUserTickets([...userTickets, newTicket])
+      //setUserTickets([...userTickets, newTicket])
       const provider = new AnchorProvider(connection, wallet, {
         preflightCommitment: commitmentLevel,
       });
@@ -90,10 +96,199 @@ export default function Component() {
       )[0];
       await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({ lotteryInfo: valueAccount, dev, mkt, user: valueAccountUser }).rpc()
 
-
+      setUserTickets([...userTickets, newTicket])
       setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
     }
   }
+  const OP_WALLET = new anchor.web3.PublicKey("9TFNhwunYo48L5vaW2HLNoCgrwkipy7YZqekAoZABwuK"); // Replace with the actual OP_WALLET key
+
+  const pickWinner = async (batchSize) => {
+    // Ensure the wallet is connected
+    if (wallet) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: commitmentLevel,
+      });
+  
+      if (!provider) return;
+  
+      // Create the program interface combining the IDL, program ID, and provider
+      const program = new Program(
+        lotteryProgramInterface as any,
+        provider
+      );
+  
+      // Generate a random number for entropy
+      const entropy = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  
+      // Execute the pick_winner method
+      try {
+        await program.methods.pickWinner(OP_WALLET.toBuffer(), entropy, batchSize)
+          .accounts({
+            lotteryInfo: lotteryInfoAccount, // Replace with the actual lottery account
+            signer: wallet.publicKey,         // The wallet making the claim
+          })
+          .rpc();
+  
+        console.log('Successfully picked a winner');
+      } catch (error) {
+        console.error('Error picking a winner:', error);
+        alert(`Error: ${error.message}`);
+      }
+    } else {
+      alert('Wallet is not connected. Please connect your wallet.');
+    }
+  };
+  
+  const claimPrize = async () => {
+    if (wallet) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: commitmentLevel,
+      });
+  
+      if (!provider) return;
+  
+      // Create the program interface combining the IDL, program ID, and provider
+      const program = new Program(
+        lotteryProgramInterface as any,
+        provider
+      );
+  
+      try {
+        await program.methods.claimPrize()
+          .accounts({
+            lotteryInfo: lotteryAccount, // Replace with the actual lottery account
+            signer: wallet.publicKey,
+            user: userAccount, // Replace with the actual user account
+          })
+          .rpc();
+  
+        console.log('Successfully claimed prize');
+      } catch (error) {
+        console.error('Error claiming prize:', error);
+        alert(`Error: ${error.message}`);
+      }
+    } else {
+      alert('Wallet is not connected. Please connect your wallet.');
+    }
+  };
+
+  const claimDev = async () => {
+    // Ensure the wallet is connected
+    if (wallet) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: commitmentLevel,
+      });
+  
+      if (!provider) return;
+  
+      // Create the program interface combining the IDL, program ID, and provider
+      const program = new Program(
+        lotteryProgramInterface as any,
+        provider
+      );
+  
+      // The infoAccount should be defined as the account holding the developer funds
+      const infoAccount = dev; // Replace with the correct public key or variable if necessary
+  
+      // Execute the claim_dev method
+      try {
+        await program.methods.claimDev()
+          .accounts({
+            info: infoAccount,
+            signer: wallet.publicKey, // The wallet making the claim
+          })
+          .rpc();
+  
+        console.log('Successfully claimed developer funds');
+      } catch (error) {
+        console.error('Error claiming developer funds:', error);
+        alert(`Error: ${error.message}`);
+      }
+    } else {
+      alert('Wallet is not connected. Please connect your wallet.');
+    }
+  };
+
+  const claimMkt = async () => {
+    // Ensure the wallet is connected
+    if (wallet) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: commitmentLevel,
+      });
+  
+      if (!provider) return;
+  
+      // Create the program interface combining the IDL, program ID, and provider
+      const program = new Program(
+        lotteryProgramInterface as any,
+        provider
+      );
+  
+      // The infoAccount should be defined as the account holding the market funds
+      const infoAccount = mkt; // Replace with the correct public key or variable if necessary
+  
+      // Execute the claim_mkt method
+      try {
+        await program.methods.claimMkt()
+          .accounts({
+            info: infoAccount,
+            signer: wallet.publicKey, // The wallet making the claim
+          })
+          .rpc();
+  
+        console.log('Successfully claimed market funds');
+      } catch (error) {
+        console.error('Error claiming market funds:', error);
+        alert(`Error: ${error.message}`);
+      }
+    } else {
+      alert('Wallet is not connected. Please connect your wallet.');
+    }
+  };
+
+  const rollover = async () => {
+    if (wallet) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: commitmentLevel,
+      });
+  
+      if (!provider) return;
+  
+      // Create the program interface combining the IDL, program ID, and provider
+      const program = new Program(
+        lotteryProgramInterface as any,
+        provider
+      );
+  
+      // Check if the connected wallet is the OP wallet
+      if (wallet.publicKey.toString() !== OP_WALLET.toString()) {
+        alert('You do not have permission to perform this action.');
+        return;
+      }
+  
+      // Retrieve the old lottery account and new lottery account (replace with actual accounts)
+      const oldLotteryAccount = oldLotteryAccount; // Replace with the actual old lottery account
+      const newLotteryAccount = newLotteryAccount; // Replace with the actual new lottery account
+  
+      try {
+        await program.methods.rollover()
+          .accounts({
+            oldLottery: oldLotteryAccount,
+            newLottery: newLotteryAccount,
+            signer: wallet.publicKey,
+          })
+          .rpc();
+  
+        console.log('Successfully rolled over funds to the new lottery');
+      } catch (error) {
+        console.error('Error during rollover:', error);
+        alert(`Error: ${error.message}`);
+      }
+    } else {
+      alert('Wallet is not connected. Please connect your wallet.');
+    }
+  };
+  
 
   return (
     <div className="min-h-screen bg-purple-600 flex flex-col items-center justify-center p-4">
@@ -150,7 +345,7 @@ export default function Component() {
               ))}
             </div>
             <div className="mb-4">
-              <h4 className="font-semibold mb-2">Buy a new ticket</h4>
+              <h4 className="font-semibold mb-2 text-center">Buy a new ticket</h4>
               <div className="grid grid-cols-6 gap-2 mb-2">
                 {newTicketNumbers.map((num, index) => (
                   <input
@@ -172,14 +367,13 @@ export default function Component() {
                 Buy Ticket
               </button>
             </div>
+            
           </div>
           <div className="text-sm">
             Match the winning number in the same order to share prizes. Current prizes up for grabs:
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: 'Match first 1', value: '339 SOL', subvalue: '$629' },
-              { label: 'Match first 2', value: '508 SOL', subvalue: '$944' },
               { label: 'Match first 3', value: '846 SOL', subvalue: '$1,573' },
               { label: 'Match first 4', value: '1,693 SOL', subvalue: '$3,145' },
               { label: 'Match first 5', value: '3,385 SOL', subvalue: '$6,291' },
