@@ -117,15 +117,33 @@ export default function Component() {
         provider
       );
   
+      // Define the lottery number (use the appropriate lottery number)
+      const lotteryNumber = new anchor.BN(4);
+  
+      // Derive the lottery info account from the lottery number
+      const seeds = [lotteryNumber.toArrayLike(Buffer, "le", 8)];
+      const lotteryInfoAccount = PublicKey.findProgramAddressSync(
+        seeds,
+        program.programId
+      )[0];
+  
+      // Define the user account
+      const userAccountSeeds = [wallet.publicKey.toBuffer()]; // Adjust if necessary
+      const userAccount = PublicKey.findProgramAddressSync(
+        userAccountSeeds,
+        program.programId
+      )[0];
+  
       // Generate a random number for entropy
       const entropy = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
   
       // Execute the pick_winner method
       try {
-        await program.methods.pickWinner(OP_WALLET.toBuffer(), entropy, batchSize)
+        await program.methods.pickWinner(wallet.publicKey.toBuffer(), entropy, batchSize)
           .accounts({
-            lotteryInfo: lotteryInfoAccount, // Replace with the actual lottery account
-            signer: wallet.publicKey,         // The wallet making the claim
+            lotteryInfo: lotteryInfoAccount,
+            signer: wallet.publicKey, // The wallet making the claim
+            user: userAccount, // Include the user account
           })
           .rpc();
   
@@ -172,79 +190,89 @@ export default function Component() {
     }
   };
 
-  const claimDev = async () => {
-    // Ensure the wallet is connected
-    if (wallet) {
-      const provider = new AnchorProvider(connection, wallet, {
-        preflightCommitment: commitmentLevel,
-      });
-  
-      if (!provider) return;
-  
-      // Create the program interface combining the IDL, program ID, and provider
-      const program = new Program(
-        lotteryProgramInterface as any,
-        provider
-      );
-  
-      // The infoAccount should be defined as the account holding the developer funds
-      const infoAccount = dev; // Replace with the correct public key or variable if necessary
-  
-      // Execute the claim_dev method
-      try {
-        await program.methods.claimDev()
-          .accounts({
-            info: infoAccount,
-            signer: wallet.publicKey, // The wallet making the claim
-          })
-          .rpc();
-  
-        console.log('Successfully claimed developer funds');
-      } catch (error) {
-        console.error('Error claiming developer funds:', error);
-        alert(`Error: ${error.message}`);
-      }
-    } else {
-      alert('Wallet is not connected. Please connect your wallet.');
-    }
-  };
-
   const claimMkt = async () => {
-    // Ensure the wallet is connected
     if (wallet) {
-      const provider = new AnchorProvider(connection, wallet, {
-        preflightCommitment: commitmentLevel,
-      });
-  
-      if (!provider) return;
-  
-      // Create the program interface combining the IDL, program ID, and provider
-      const program = new Program(
-        lotteryProgramInterface as any,
-        provider
-      );
-  
-      // The infoAccount should be defined as the account holding the market funds
-      const infoAccount = mkt; // Replace with the correct public key or variable if necessary
-  
-      // Execute the claim_mkt method
-      try {
-        await program.methods.claimMkt()
-          .accounts({
-            info: infoAccount,
-            signer: wallet.publicKey, // The wallet making the claim
-          })
-          .rpc();
-  
-        console.log('Successfully claimed market funds');
-      } catch (error) {
-        console.error('Error claiming market funds:', error);
-        alert(`Error: ${error.message}`);
-      }
+        const provider = new AnchorProvider(connection, wallet, {
+            preflightCommitment: commitmentLevel,
+        });
+
+        if (!provider) return;
+
+        /* Create the program interface combining the IDL, program ID, and provider */
+        const program = new Program(lotteryProgramInterface as any, provider);
+
+        // Generate the PDA for the Mkt account using the specified seed
+        const mktSeedValue = new anchor.BN(6); // Change as necessary
+        const seedsMkt = [mktSeedValue.toArrayLike(Buffer, "le", 8)];
+        const mktPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsMkt, program.programId)[0];
+
+        // Check if the account exists and fetch its balance if needed
+        const bal = await connection.getBalance(mktPDA);
+        if (bal === 0) {
+            console.log(`Account ${mktPDA} is not initialized`);
+            return;
+        }
+
+        // Call the `claimMkt` method on the program
+        try {
+            await program.methods.claimMkt()
+                .accounts({
+                    info: mktPDA,
+                    signer: wallet.publicKey,
+                })
+                .rpc();
+
+            console.log("Successfully claimed market prize");
+        } catch (error) {
+            console.error("Error claiming market prize:", error);
+            alert(`Error: ${error.message}`);
+        }
     } else {
-      alert('Wallet is not connected. Please connect your wallet.');
+        alert("Wallet is not connected. Please connect your wallet.");
     }
-  };
+};
+
+const claimDev = async () => {
+    if (wallet) {
+        const provider = new AnchorProvider(connection, wallet, {
+            preflightCommitment: commitmentLevel,
+        });
+
+        if (!provider) return;
+
+        /* Create the program interface combining the IDL, program ID, and provider */
+        const program = new Program(lotteryProgramInterface as any, provider);
+
+        // Generate the PDA for the Dev account using the specified seed
+        const devSeedValue = new anchor.BN(5); // Change as necessary
+        const seedsDev = [devSeedValue.toArrayLike(Buffer, "le", 8)];
+        const devPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsDev, program.programId)[0];
+
+        // Check if the account exists and fetch its balance if needed
+        const bal = await connection.getBalance(devPDA);
+        if (bal === 0) {
+            console.log(`Account ${devPDA} is not initialized`);
+            return;
+        }
+
+        // Call the `claimDev` method on the program
+        try {
+            await program.methods.claimDev()
+                .accounts({
+                    info: devPDA,
+                    signer: wallet.publicKey,
+                })
+                .rpc();
+
+            console.log("Successfully claimed developer prize");
+        } catch (error) {
+            console.error("Error claiming developer prize:", error);
+            alert(`Error: ${error.message}`);
+        }
+    } else {
+        alert("Wallet is not connected. Please connect your wallet.");
+    }
+};
 
   const rollover = async () => {
     if (wallet) {
@@ -365,6 +393,42 @@ export default function Component() {
                 onClick={buyTicket}
               >
                 Buy Ticket
+              </button>
+            </div>
+            <div className="mb-4">
+              
+              <button
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
+                onClick={handlePickWinner}
+              >
+                PickWinner
+              </button>
+            </div>
+            <div className="mb-4">
+              
+              <button
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
+                onClick={rollover}
+              >
+                Roll Over
+              </button>
+            </div>
+            <div className="mb-4">
+              
+              <button
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
+                onClick={claimDev}
+              >
+                Claim Dev Funds
+              </button>
+            </div>
+            <div className="mb-4">
+              
+              <button
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
+                onClick={claimMkt}
+              >
+                Claim Mkt Funds
               </button>
             </div>
             
