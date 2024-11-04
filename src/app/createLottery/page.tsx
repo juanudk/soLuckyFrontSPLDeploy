@@ -1,4 +1,4 @@
-import LotteryTicketPrice from "./components/lottery-ticket-page"
+import LotteryTicketPrice from "../components/lottery-creation-page"
 
 export default function Home() {
   return (
