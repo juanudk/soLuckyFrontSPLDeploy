@@ -46,6 +46,8 @@ export default function Component() {
   const wallet = useAnchorWallet();
   const [userTickets, setUserTickets] = useState<userTickets>()
   const [newTicketNumbers, setNewTicketNumbers] = useState(['', '', '', '', '', ''])
+  const dev = new BN(5); // Change as necessary
+  const mkt = new BN(6); // Change as necessary
 
   //const claimPrize = () => {
   //setIsClaimed(true)
@@ -57,7 +59,7 @@ export default function Component() {
       setLotteryNumber(new BN(1))
     }
     if (solPrice == 0) {
-      console.log("solPrice",solPrice)
+      console.log("solPrice", solPrice)
       const response = await axios.get("/api/getTokenPrice?quote=usd&token=solana")
       setSolPrice(response.data[0].current_price)
     }
@@ -91,12 +93,34 @@ export default function Component() {
       )[0];
       const userInfo = await program.account.userTicket.fetch(userPDA)
       setUserTickets(userInfo)
+      const seedsDev = [dev.toArrayLike(Buffer, "le", 8)];
+      let devPDA = web3.PublicKey.findProgramAddressSync(
+        seedsDev,
+        program.programId
+      )[0];
+
+      const seedsMkt = [mkt.toArrayLike(Buffer, "le", 8)];
+      let mktPDA = web3.PublicKey.findProgramAddressSync(
+        seedsMkt,
+        program.programId
+      )[0];
+      const provider2 = new AnchorProvider(connection, wallet as any, {
+        preflightCommitment: commitmentLevel,
+      });
+      if (!provider2) return
+      const program2: any = new Program(
+        lotteryProgramInterface as any,
+        provider2
+      );
+
+      const calcPrize = await program2.methods.calculateUserPrize().accounts({ lotteryInfo: lotteryPDA, dev: devPDA, mkt: mktPDA, user: userPDA }).view()
+      console.log("calc prize", calcPrize)
     }
-  }, [wallet,solPrice,lotteryBal])
+  }, [wallet, solPrice, lotteryBal])
 
   useEffect(() => {
     loadInfo()
-  },[wallet,solPrice,lotteryBal])
+  }, [wallet, solPrice, lotteryBal])
 
   const handleNumberChange = (index: number, value: string) => {
     const newNumbers = [...newTicketNumbers]
@@ -145,11 +169,23 @@ export default function Component() {
         console.log(`Account ${userPDA} already initialized`)
       }
       const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
-      let valueAccount = web3.PublicKey.findProgramAddressSync(
+      let lotteryPDA = web3.PublicKey.findProgramAddressSync(
         seeds,
         program.programId
       )[0];
-      await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({ lotteryInfo: valueAccount, dev, mkt, user: userPDA }).rpc()
+      const seedsDev = [dev.toArrayLike(Buffer, "le", 8)];
+      let devPDA = web3.PublicKey.findProgramAddressSync(
+        seedsDev,
+        program.programId
+      )[0];
+
+      const seedsMkt = [mkt.toArrayLike(Buffer, "le", 8)];
+      let mktPDA = web3.PublicKey.findProgramAddressSync(
+        seedsMkt,
+        program.programId
+      )[0];
+
+      await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({ lotteryInfo: lotteryPDA, dev: devPDA, mkt: mktPDA, user: userPDA }).rpc()
 
       setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
     }
@@ -256,8 +292,7 @@ export default function Component() {
       const program = new Program(lotteryProgramInterface as any, provider);
 
       // Generate the PDA for the Mkt account using the specified seed
-      const mktSeedValue = new BN(6); // Change as necessary
-      const seedsMkt = [mktSeedValue.toArrayLike(Buffer, "le", 8)];
+      const seedsMkt = [mkt.toArrayLike(Buffer, "le", 8)];
       const mktPDA = web3.PublicKey.findProgramAddressSync(seedsMkt, program.programId)[0];
 
       // Check if the account exists and fetch its balance if needed
@@ -298,8 +333,7 @@ export default function Component() {
       const program = new Program(lotteryProgramInterface as any, provider);
 
       // Generate the PDA for the Dev account using the specified seed
-      const devSeedValue = new BN(5); // Change as necessary
-      const seedsDev = [devSeedValue.toArrayLike(Buffer, "le", 8)];
+      const seedsDev = [dev.toArrayLike(Buffer, "le", 8)];
       const devPDA = web3.PublicKey.findProgramAddressSync(seedsDev, program.programId)[0];
 
       // Check if the account exists and fetch its balance if needed
