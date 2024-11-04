@@ -35,19 +35,24 @@ export default function Component() {
   const [isHidden, setIsHidden] = useState(false)
   const [userPrize, setUserPrize] = useState(500)
   const [isClaimed, setIsClaimed] = useState(false)
+  const [winNumber, setWinNumber] = useState(0)
   const [lotteryNumber, setLotteryNumber] = useState(new BN(0))
   const [matches6Prize, setMatches6Prize] = useState(new BN(0))
   const [matches5Prize, setMatches5Prize] = useState(new BN(0))
   const [matches4Prize, setMatches4Prize] = useState(new BN(0))
   const [matches3Prize, setMatches3Prize] = useState(new BN(0))
+  const [devPub, setDevPub] = useState("")
+  const [mktPub, setMktPub] = useState("")
+  const [opPub, setOpPub] = useState("")
   const [lotteryBal, setLotteryBal] = useState(0)
   const [solPrice, setSolPrice] = useState(0)
+  const [userReward, setUserReward] = useState(0)
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const [userTickets, setUserTickets] = useState<userTickets>()
   const [newTicketNumbers, setNewTicketNumbers] = useState(['', '', '', '', '', ''])
-  const dev = new BN(5); // Change as necessary
-  const mkt = new BN(6); // Change as necessary
+  const devId = new BN(5); // Change as necessary
+  const mktId = new BN(6); // Change as necessary
 
   //const claimPrize = () => {
   //setIsClaimed(true)
@@ -55,11 +60,9 @@ export default function Component() {
   //}
   const loadInfo = useCallback(async () => {
     if (lotteryNumber == 0) {
-      console.log("here")
       setLotteryNumber(new BN(1))
     }
     if (solPrice == 0) {
-      console.log("solPrice", solPrice)
       const response = await axios.get("/api/getTokenPrice?quote=usd&token=solana")
       setSolPrice(response.data[0].current_price)
     }
@@ -86,35 +89,76 @@ export default function Component() {
       setLotteryBal(bal / LAMPORTS_PER_SOL)
     }
     if (wallet) {
-      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
-      let userPDA = PublicKey.findProgramAddressSync(
-        seedsUser,
-        program.programId
-      )[0];
-      const userInfo = await program.account.userTicket.fetch(userPDA)
-      setUserTickets(userInfo)
-      const seedsDev = [dev.toArrayLike(Buffer, "le", 8)];
-      let devPDA = web3.PublicKey.findProgramAddressSync(
-        seedsDev,
-        program.programId
-      )[0];
+      try {
+        const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+        let userPDA = PublicKey.findProgramAddressSync(
+          seedsUser,
+          program.programId
+        )[0];
 
-      const seedsMkt = [mkt.toArrayLike(Buffer, "le", 8)];
-      let mktPDA = web3.PublicKey.findProgramAddressSync(
-        seedsMkt,
-        program.programId
-      )[0];
-      const provider2 = new AnchorProvider(connection, wallet as any, {
-        preflightCommitment: commitmentLevel,
-      });
-      if (!provider2) return
-      const program2: any = new Program(
-        lotteryProgramInterface as any,
-        provider2
-      );
+        const userInfo = await program.account.userTicket.fetch(userPDA)
+        const lotteryInfo = await program.account.lotteryInfo.fetch(lotteryPDA)
+        setWinNumber(parseInt(lotteryInfo.winNumber.toString()))
+        if (winNumber > 0) {
+          console.log("wn", lotteryInfo.winNumber)
+          console.log("m6", lotteryInfo.fullMatch)
+          console.log("p6", lotteryInfo.fullMatchCount)
+          console.log("m5", lotteryInfo.partial5Match)
+          console.log("p5", lotteryInfo.partial5Count)
+          console.log("m4", lotteryInfo.partial4Match)
+          console.log("p4", lotteryInfo.partial4Count)
+          console.log("m3", lotteryInfo.partial3Match)
+          console.log("p3", lotteryInfo.partial3Count)
 
-      const calcPrize = await program2.methods.calculateUserPrize().accounts({ lotteryInfo: lotteryPDA, dev: devPDA, mkt: mktPDA, user: userPDA }).view()
-      console.log("calc prize", calcPrize)
+          let amount = 0;
+          let final_bal = lotteryInfo.finalBal;
+          for (let i = 0; i < userInfo.boughtTickets.length; i++) {
+            if (userInfo.boughtTickets[i] == lotteryInfo.fullMatch) {
+              amount += (final_bal * MATCHES_6 / PERCENTAGE_BASE)
+                / lotteryInfo.fullMatchCount
+                * userInfo.boughtTicketsCount[i]
+            } else {
+              let found = false;
+              for (let m5 = 0; i < lotteryInfo.partial5Match.length; m5++) {
+                if (userInfo.boughtTickets[i]
+                  == lotteryInfo.partial5Match[m5]) {
+                  amount += (final_bal * MATCHES_5 / PERCENTAGE_BASE)
+                    / lotteryInfo.partial5Count
+                    * userInfo.boughtTicketsCount[i]
+                  found = true;
+                }
+              }
+              if (found == false) {
+                for (let m4 = 0; i < lotteryInfo.partial4Match.length; m4++) {
+                  if (userInfo.boughtTickets[i]
+                    == lotteryInfo.partial4Match[m4]) {
+                    amount += (final_bal * MATCHES_4
+                      / PERCENTAGE_BASE)
+                      / lotteryInfo.partial4Count
+                      * userInfo.boughtTicketsCount;
+                    found = true;
+                  }
+                }
+              }
+              if (found == false) {
+                for (let m3 = 0; i < lotteryInfo.partial3Match.length; m3++) {
+                  if (userInfo.boughtTickets[i]
+                    == lotteryInfo.partial3Match[m3]) {
+                    amount += (final_bal * MATCHES_3
+                      / PERCENTAGE_BASE)
+                      / lotteryInfo.partial3Count
+                      * userInfo.boughtTicketsCount[i]
+                  }
+                }
+              }
+            }
+          }
+          setUserReward(amount)
+        }
+        setUserTickets(userInfo)
+      }catch(e){
+        console.log(e)
+      }
     }
   }, [wallet, solPrice, lotteryBal])
 
@@ -173,13 +217,13 @@ export default function Component() {
         seeds,
         program.programId
       )[0];
-      const seedsDev = [dev.toArrayLike(Buffer, "le", 8)];
+      const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
       let devPDA = web3.PublicKey.findProgramAddressSync(
         seedsDev,
         program.programId
       )[0];
 
-      const seedsMkt = [mkt.toArrayLike(Buffer, "le", 8)];
+      const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
       let mktPDA = web3.PublicKey.findProgramAddressSync(
         seedsMkt,
         program.programId
@@ -292,7 +336,7 @@ export default function Component() {
       const program = new Program(lotteryProgramInterface as any, provider);
 
       // Generate the PDA for the Mkt account using the specified seed
-      const seedsMkt = [mkt.toArrayLike(Buffer, "le", 8)];
+      const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
       const mktPDA = web3.PublicKey.findProgramAddressSync(seedsMkt, program.programId)[0];
 
       // Check if the account exists and fetch its balance if needed
@@ -333,7 +377,7 @@ export default function Component() {
       const program = new Program(lotteryProgramInterface as any, provider);
 
       // Generate the PDA for the Dev account using the specified seed
-      const seedsDev = [dev.toArrayLike(Buffer, "le", 8)];
+      const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
       const devPDA = web3.PublicKey.findProgramAddressSync(seedsDev, program.programId)[0];
 
       // Check if the account exists and fetch its balance if needed
@@ -439,21 +483,23 @@ export default function Component() {
             <span className="text-3xl text-purple-400">~${formatSolUSD(lotteryBal)}</span>
           </div>
           <div className="text-sm text-gray-400">{formatValue(lotteryBal)} SOL</div>
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Your Prize</h3>
-            <div className="flex justify-between items-center">
-              <span className="text-2xl text-green-400">{userPrize} SOL</span>
-              <button
-                onClick={claimPrize}
-                disabled={isClaimed}
-                className={`px-4 py-2 rounded-md ${isClaimed ? 'bg-gray-600 text-gray-400' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-              >
-                {isClaimed ? "Claimed" : "Claim Prize"}
-              </button>
-            </div>
-          </div>
+          {userReward > 0 &&
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Your Prize</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-2xl text-green-400">{userPrize} SOL</span>
+                <button
+                  onClick={claimPrize}
+                  disabled={isClaimed}
+                  className={`px-4 py-2 rounded-md ${isClaimed ? 'bg-gray-600 text-gray-400' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                >
+                  {isClaimed ? "Claimed" : "Claim Prize"}
+                </button>
+              </div>
+            </div>}
           <div>
-            <h3 className="font-semibold mb-2">Your tickets</h3>
+            {userTickets &&
+              <h3 className="font-semibold mb-2">Your tickets</h3>}
             <div className="grid grid-cols-2 gap-2 mb-4">
               {userTickets && userTickets.boughtTickets.map((ticket, index) => (
                 <div key={index} className="bg-gray-700 p-2 rounded-md text-xs">
@@ -510,15 +556,17 @@ export default function Component() {
                 Roll Over
               </button>
             </div>
-            <div className="mb-4">
+            {wallet && wallet.publicKey.toString() == dev.toString() &&
+              <div className="mb-4">
 
-              <button
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
-                onClick={claimDev}
-              >
-                Claim Dev Funds
-              </button>
-            </div>
+                <button
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
+                  onClick={claimDev}
+                >
+                  Claim Dev Funds
+                </button>
+              </div>}
+            {wallet && wallet.publicKey.toString() == mkt.toString() &&
             <div className="mb-4">
 
               <button
@@ -527,7 +575,7 @@ export default function Component() {
               >
                 Claim Mkt Funds
               </button>
-            </div>
+            </div>}
 
           </div>
           <div className="text-sm">

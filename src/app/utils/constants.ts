@@ -10,8 +10,9 @@ export const connection = new Connection(endpoint, commitmentLevel);
 
 /* Constants for the Deployed "Hello World" Program */
 export const lotteryProgramId = new PublicKey(idl.address);
-export const dev = new PublicKey("5cbBDZmhx7MiyvvJWtxtzjDrqAjauQB9W8DJWAX3uUQ1");
-export const mkt = new PublicKey("4K78eeTnFbukbx3UrTpzQSA6pbL72xjJzf8dVJN1KXn9");
+export const dev = new PublicKey("CFAUQvT5MA5xJemHwRcbzCQC3UPRyDeQVr1cqo4JbEAp");
+export const mkt = new PublicKey("CvmWdoJiH5qRQywPhNdESMC6LHMEYqYgMvgJMuwFQyQw");
+export const op = new PublicKey("9TFNhwunYo48L5vaW2HLNoCgrwkipy7YZqekAoZABwuK");
 export const MATCHES_6  = new BN(4000);
 export const MATCHES_5  = new BN(2000);
 export const MATCHES_4  = new BN(1000);
