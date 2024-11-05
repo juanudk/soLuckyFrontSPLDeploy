@@ -4,14 +4,14 @@ import { useState, ChangeEvent } from 'react'
 import { ChevronUp, ChevronDown } from "lucide-react"
 import dynamic from 'next/dynamic';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
-import { AnchorProvider, Program } from '@coral-xyz/anchor';
-import { commitmentLevel, lotteryProgramInterface } from '../utils/constants';
+import { AnchorProvider, Program, BN, web3 } from '@coral-xyz/anchor';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { commitmentLevel, devId, lotteryProgramInterface, mktId } from '../utils/constants';
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
 import * as anchor from "@coral-xyz/anchor";
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 export default function Component() {
   const [isHidden, setIsHidden] = useState(false)
@@ -20,9 +20,31 @@ export default function Component() {
   const [ticketPrice, setTicketPrice] = useState('')
   const [lotteryPDA, setLotteryPDA] = useState('')
   const [maxTickets, setMaxTickets] = useState('')
+  const [lotteryIdPick, setLotteryIdPick] = useState(0)
+  const [batchSize, setBatchSize] = useState(0)
+  const [entropy, setEntropy] = useState(0)
+  const [oldLottery, setOldLottery] = useState('')
+  const [newLottery, setNewLottery] = useState('')
+  const [lotteryPDAStr, setLotteryPDAStr] = useState('')
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
+  const handleSetLotteryId = async (lotteryIdStr: string) =>{
+    if(wallet){
+      setLotteryId(lotteryIdStr)
+      const provider = new AnchorProvider(connection, wallet, {
+          preflightCommitment: commitmentLevel,
+        });
 
+        if (!provider) return;
+
+        /* Create the program interface combining the IDL, program ID, and provider */
+        const program = new Program(lotteryProgramInterface as any, provider);
+      let lotteryIdBN = new anchor.BN(lotteryIdStr);
+      const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8)];
+      const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
+      setLotteryPDAStr(lotteryPDA.toString())
+    }
+  }
   const handleCreateLottery = async () => {
     console.log('Creating lottery with:', { lotteryId, isRandomOutside, ticketPrice, maxTickets })
     if (wallet) {
@@ -46,7 +68,7 @@ export default function Component() {
       if (bal > 0) {
         console.log(`Account ${lotteryPDA} is already initialized`);
         return;
-      }else{
+      } else {
         await program.methods.initialize(lotteryIdBN, isRandomOutside, ticketPriceBN, maxTicketsBN).accounts({ lotteryInfo: lotteryPDA }).rpc()
         setLotteryPDA(`${lotteryPDA}`)
       }
@@ -55,6 +77,110 @@ export default function Component() {
       alert("Wallet is not connected. Please connect your wallet.");
     }
   }
+
+  const pickWinner = async () => {
+    if (lotteryIdPick > 0 && entropy > 0 && batchSize > 0) {
+      if (wallet) {
+        const provider = new AnchorProvider(connection, wallet, {
+          preflightCommitment: commitmentLevel,
+        });
+
+        if (!provider) return;
+
+        // Create the program interface combining the IDL, program ID, and provider
+        const program = new Program(
+          lotteryProgramInterface as any,
+          provider
+        );
+
+        const lotteryNumber = new BN(lotteryIdPick);
+
+        // Derive the lottery info account from the lottery number
+        const seeds = [lotteryNumber.toArrayLike(Buffer, "le", 8)];
+        const lotteryPDA = PublicKey.findProgramAddressSync(
+          seeds,
+          program.programId
+        )[0];
+
+        const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
+        let devPDA = web3.PublicKey.findProgramAddressSync(
+          seedsDev,
+          program.programId
+        )[0];
+
+        const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
+        let mktPDA = web3.PublicKey.findProgramAddressSync(
+          seedsMkt,
+          program.programId
+        )[0];
+
+        const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+        let userPDA = PublicKey.findProgramAddressSync(
+          seedsUser,
+          program.programId
+        )[0];
+        try {
+          console.log(lotteryNumber.toString(), (new anchor.BN(entropy)).toString(), (new anchor.BN(batchSize)).toString())
+          const bal = await connection.getBalance(userPDA);
+          if (bal == 0) {
+            console.log(`Account ${userPDA} should be initialized`)
+            await program.methods.initializeUser(lotteryNumber).accounts({ user: userPDA }).rpc()
+          } else {
+            console.log(`Account ${userPDA} already initialized`)
+          }
+
+          await program.methods.pickWinner(lotteryNumber, new anchor.BN(entropy), new anchor.BN(batchSize))
+            .accounts({
+              lotteryInfo: lotteryPDA,
+              dev: devPDA,
+              mkt: mktPDA,
+              user: userPDA,
+            })
+            .rpc();
+
+          console.log('Successfully picked a winner');
+        } catch (error) {
+          console.error('Error picking a winner:', error);
+          // alert(`Error: ${error.message}`);
+        }
+      } else {
+        alert('Wallet is not connected. Please connect your wallet.');
+      }
+    } else {
+      alert("Invalid lottery Id entropy or batch size")
+    }
+  };
+  const rollover = async () => {
+    if (wallet) {
+      const provider = new AnchorProvider(connection, wallet, {
+        preflightCommitment: commitmentLevel,
+      });
+
+      if (!provider) return;
+
+      // Create the program interface combining the IDL, program ID, and provider
+      const program = new Program(
+        lotteryProgramInterface as any,
+        provider
+      );
+
+
+      try {
+        await program.methods.rollover()
+          .accounts({
+            oldLottery,
+            newLottery,
+          })
+          .rpc();
+
+        console.log('Successfully rolled over funds to the new lottery');
+      } catch (error) {
+        console.error('Error during rollover:', error);
+      }
+    } else {
+      alert('Wallet is not connected. Please connect your wallet.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-purple-600 flex flex-col items-center justify-center p-4">
@@ -75,14 +201,14 @@ export default function Component() {
           <div className="space-y-4">
             <div>
               <label htmlFor="lotteryId" className="block text-sm font-medium mb-1">
-                Lottery ID
+                Lottery ID {lotteryPDAStr}
               </label>
               <input
                 id="lotteryId"
                 type="text"
                 placeholder="Enter lottery ID"
                 value={lotteryId}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setLotteryId(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => handleSetLotteryId(e.target.value)}
                 className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
@@ -130,7 +256,7 @@ export default function Component() {
               />
             </div>
             <div>
-              <p>Lottery PDA {lotteryPDA && lotteryPDA}</p> 
+              <p>Lottery PDA {lotteryPDA && lotteryPDA}</p>
             </div>
           </div>
           <button
@@ -138,6 +264,83 @@ export default function Component() {
             onClick={handleCreateLottery}
           >
             Create Lottery
+          </button>
+          <div>
+            <label htmlFor="lotteryIdPick" className="block text-sm font-medium mb-1">
+              Lottery Id Pick Winner
+            </label>
+            <input
+              id="lotteryIdPick"
+              type="number"
+              placeholder="Enter lottery id to pick winner"
+              value={lotteryIdPick}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setLotteryIdPick(parseInt(e.target.value))}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="entropy" className="block text-sm font-medium mb-1">
+              Entropy
+            </label>
+            <input
+              id="entropy"
+              type="number"
+              placeholder="Enter entropy to add to sorted number"
+              value={entropy}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setEntropy(parseInt(e.target.value))}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="batchSize" className="block text-sm font-medium mb-1">
+              Batch size
+            </label>
+            <input
+              id="batchSize"
+              type="number"
+              placeholder="Enter batch size"
+              value={batchSize}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setBatchSize(parseInt(e.target.value))}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-md transition duration-200 ease-in-out"
+            onClick={pickWinner}
+          >
+            Pick winner
+          </button>
+          <div>
+            <label htmlFor="lastLottery" className="block text-sm font-medium mb-1">
+              Last lottery
+            </label>
+            <input
+              id="lastLottery"
+              type="text"
+              placeholder="Enter lottery id to pick winner"
+              value={oldLottery}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setOldLottery(e.target.value)}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="newLottery" className="block text-sm font-medium mb-1">
+              New lottery
+            </label>
+            <input
+              id="newLottery"
+              type="text"
+              placeholder="Enter entropy to add to sorted number"
+              value={newLottery}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setNewLottery(e.target.value)}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-md transition duration-200 ease-in-out"
+            onClick={rollover}
+          >
+            Rollover
           </button>
         </div>
         <div className="p-4 border-t border-gray-700 flex justify-center">

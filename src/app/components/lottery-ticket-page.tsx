@@ -7,6 +7,7 @@ const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
+import { useSearchParams } from 'next/navigation'
 import {
   connection,
   commitmentLevel,
@@ -18,7 +19,9 @@ import {
   MATCHES_6,
   MATCHES_5,
   MATCHES_4,
-  MATCHES_3
+  MATCHES_3,
+  devId,
+  mktId
 } from "../utils/constants";
 import { Lottery } from '../types/lottery';
 import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -32,11 +35,12 @@ const numberIds = [1, 2, 3, 4, 5, 6]
 const voidWallet = (new Keypair());
 
 export default function Component() {
+  const searchParams = useSearchParams()
+  const urlId = searchParams.get('id')
   const [isHidden, setIsHidden] = useState(false)
-  const [userPrize, setUserPrize] = useState(500)
   const [isClaimed, setIsClaimed] = useState(false)
   const [winNumber, setWinNumber] = useState(0)
-  const [lotteryNumber, setLotteryNumber] = useState(new BN(0))
+  const [lotteryNumber, setLotteryNumber] = useState(new BN(2))
   const [matches6Prize, setMatches6Prize] = useState(new BN(0))
   const [matches5Prize, setMatches5Prize] = useState(new BN(0))
   const [matches4Prize, setMatches4Prize] = useState(new BN(0))
@@ -51,16 +55,15 @@ export default function Component() {
   const wallet = useAnchorWallet();
   const [userTickets, setUserTickets] = useState<userTickets>()
   const [newTicketNumbers, setNewTicketNumbers] = useState(['', '', '', '', '', ''])
-  const devId = new BN(5); // Change as necessary
-  const mktId = new BN(6); // Change as necessary
+
 
   //const claimPrize = () => {
   //setIsClaimed(true)
   //// In a real application, you would call an API or smart contract here
   //}
   const loadInfo = useCallback(async () => {
-    if (lotteryNumber == 0) {
-      setLotteryNumber(new BN(1))
+    if (urlId && parseInt(urlId) > 0 && urlId != lotteryNumber) {
+      setLotteryNumber(new BN(urlId))
     }
     if (solPrice == 0) {
       const response = await axios.get("/api/getTokenPrice?quote=usd&token=solana")
@@ -74,7 +77,7 @@ export default function Component() {
       lotteryProgramInterface as any,
       provider
     );
-    const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
+    const seeds = [lotteryNumber.toArrayLike(Buffer, "le", 8)];
     let lotteryPDA = web3.PublicKey.findProgramAddressSync(
       seeds,
       program.programId
@@ -98,8 +101,9 @@ export default function Component() {
 
         const userInfo = await program.account.userTicket.fetch(userPDA)
         const lotteryInfo = await program.account.lotteryInfo.fetch(lotteryPDA)
-        setWinNumber(parseInt(lotteryInfo.winNumber.toString()))
-        if (winNumber > 0) {
+        const winNumberLocal = lotteryInfo.winNumber.toNumber()
+        setWinNumber(winNumberLocal)
+        if (winNumberLocal > 0) {
           console.log("wn", lotteryInfo.winNumber)
           console.log("m6", lotteryInfo.fullMatch)
           console.log("p6", lotteryInfo.fullMatchCount)
@@ -119,7 +123,7 @@ export default function Component() {
                 * userInfo.boughtTicketsCount[i]
             } else {
               let found = false;
-              for (let m5 = 0; i < lotteryInfo.partial5Match.length; m5++) {
+              for (let m5 = 0; m5 < lotteryInfo.partial5Match.length; m5++) {
                 if (userInfo.boughtTickets[i]
                   == lotteryInfo.partial5Match[m5]) {
                   amount += (final_bal * MATCHES_5 / PERCENTAGE_BASE)
@@ -129,7 +133,7 @@ export default function Component() {
                 }
               }
               if (found == false) {
-                for (let m4 = 0; i < lotteryInfo.partial4Match.length; m4++) {
+                for (let m4 = 0; m4 < lotteryInfo.partial4Match.length; m4++) {
                   if (userInfo.boughtTickets[i]
                     == lotteryInfo.partial4Match[m4]) {
                     amount += (final_bal * MATCHES_4
@@ -141,7 +145,7 @@ export default function Component() {
                 }
               }
               if (found == false) {
-                for (let m3 = 0; i < lotteryInfo.partial3Match.length; m3++) {
+                for (let m3 = 0; m3 < lotteryInfo.partial3Match.length; m3++) {
                   if (userInfo.boughtTickets[i]
                     == lotteryInfo.partial3Match[m3]) {
                     amount += (final_bal * MATCHES_3
@@ -153,16 +157,17 @@ export default function Component() {
               }
             }
           }
-          setUserReward(amount)
+          setUserReward(amount / LAMPORTS_PER_SOL)
         }
         setUserTickets(userInfo)
-      }catch(e){
+      } catch (e) {
         console.log(e)
       }
     }
   }, [wallet, solPrice, lotteryBal])
 
   useEffect(() => {
+    console.log("here use effect")
     loadInfo()
   }, [wallet, solPrice, lotteryBal])
 
@@ -185,7 +190,6 @@ export default function Component() {
       return
     }
     if (wallet) {
-      const lotteryNumber = new BN(1)
       //setUserTickets([...userTickets, newTicket])
       const provider = new AnchorProvider(connection, wallet, {
         preflightCommitment: commitmentLevel,
@@ -236,60 +240,6 @@ export default function Component() {
   }
   const OP_WALLET = new web3.PublicKey("9TFNhwunYo48L5vaW2HLNoCgrwkipy7YZqekAoZABwuK"); // Replace with the actual OP_WALLET key
 
-  const pickWinner = async (batchSize: number) => {
-    // Ensure the wallet is connected
-    if (wallet) {
-      const provider = new AnchorProvider(connection, wallet, {
-        preflightCommitment: commitmentLevel,
-      });
-
-      if (!provider) return;
-
-      // Create the program interface combining the IDL, program ID, and provider
-      const program = new Program(
-        lotteryProgramInterface as any,
-        provider
-      );
-
-      // Define the lottery number (use the appropriate lottery number)
-      const lotteryNumber = new BN(4);
-
-      // Derive the lottery info account from the lottery number
-      const seeds = [lotteryNumber.toArrayLike(Buffer, "le", 8)];
-      const lotteryInfoAccount = PublicKey.findProgramAddressSync(
-        seeds,
-        program.programId
-      )[0];
-
-      // Define the user account
-      const userAccountSeeds = [wallet.publicKey.toBuffer()]; // Adjust if necessary
-      const userAccount = PublicKey.findProgramAddressSync(
-        userAccountSeeds,
-        program.programId
-      )[0];
-
-      // Generate a random number for entropy
-      const entropy = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-
-      // Execute the pick_winner method
-      try {
-        await program.methods.pickWinner(wallet.publicKey.toBuffer(), entropy, batchSize)
-          .accounts({
-            lotteryInfo: lotteryInfoAccount,
-            signer: wallet.publicKey, // The wallet making the claim
-            user: userAccount, // Include the user account
-          })
-          .rpc();
-
-        console.log('Successfully picked a winner');
-      } catch (error) {
-        console.error('Error picking a winner:', error);
-        // alert(`Error: ${error.message}`);
-      }
-    } else {
-      alert('Wallet is not connected. Please connect your wallet.');
-    }
-  };
 
   const claimPrize = async () => {
     if (wallet) {
@@ -304,21 +254,41 @@ export default function Component() {
         lotteryProgramInterface as any,
         provider
       );
+      const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
+      let lotteryPDA = web3.PublicKey.findProgramAddressSync(
+        seeds,
+        program.programId
+      )[0];
+      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+      let userPDA = PublicKey.findProgramAddressSync(
+        seedsUser,
+        program.programId
+      )[0];
+      const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
+      let devPDA = web3.PublicKey.findProgramAddressSync(
+        seedsDev,
+        program.programId
+      )[0];
 
-      //     try {
-      //       await program.methods.claimPrize()
-      //         .accounts({
-      //           lotteryInfo: lotteryAccount, // Replace with the actual lottery account
-      //           signer: wallet.publicKey,
-      //           user: userAccount, // Replace with the actual user account
-      //         })
-      //         .rpc();
-      // 
-      //       console.log('Successfully claimed prize');
-      //     } catch (error) {
-      //       console.error('Error claiming prize:', error);
-      //       alert(`Error: ${error.message}`);
-      //     }
+      const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
+      let mktPDA = web3.PublicKey.findProgramAddressSync(
+        seedsMkt,
+        program.programId
+      )[0];
+      try {
+        await program.methods.claimPrize()
+          .accounts({
+            lotteryInfo: lotteryPDA, // Replace with the actual lottery account
+            user: userPDA, // Replace with the actual user account
+            dev: devPDA, 
+            mkt: mktPDA
+          })
+          .rpc();
+
+        console.log('Successfully claimed prize');
+      } catch (error) {
+        console.error('Error claiming prize:', error);
+      }
     } else {
       alert('Wallet is not connected. Please connect your wallet.');
     }
@@ -487,7 +457,7 @@ export default function Component() {
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Your Prize</h3>
               <div className="flex justify-between items-center">
-                <span className="text-2xl text-green-400">{userPrize} SOL</span>
+                <span className="text-2xl text-green-400">{userReward} SOL</span>
                 <button
                   onClick={claimPrize}
                   disabled={isClaimed}
@@ -567,15 +537,15 @@ export default function Component() {
                 </button>
               </div>}
             {wallet && wallet.publicKey.toString() == mkt.toString() &&
-            <div className="mb-4">
+              <div className="mb-4">
 
-              <button
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
-                onClick={claimMkt}
-              >
-                Claim Mkt Funds
-              </button>
-            </div>}
+                <button
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
+                  onClick={claimMkt}
+                >
+                  Claim Mkt Funds
+                </button>
+              </div>}
 
           </div>
           <div className="text-sm">

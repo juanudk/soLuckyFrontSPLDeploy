@@ -1,9 +1,5 @@
 {
   "address": "7LxvHtZUd83K9fWTyRZVxH9448k44GteAHL9u1sQy69s",
-  "name": "lottery",
-    "version": "0.1.0",
-    "spec": "0.1.0",
-    "description": "Created with Anchor",
   "metadata": {
     "name": "lottery",
     "version": "0.1.0",
@@ -566,6 +562,11 @@
       "code": 6009,
       "name": "NotClaimableMkt",
       "msg": "Claim wallet is not the mkt"
+    },
+    {
+      "code": 6010,
+      "name": "MaxTicketReached",
+      "msg": "Max tickets reached"
     }
   ],
   "types": [
@@ -658,6 +659,10 @@
           },
           {
             "name": "max_tickets",
+            "type": "u16"
+          },
+          {
+            "name": "ticket_count",
             "type": "u16"
           },
           {
