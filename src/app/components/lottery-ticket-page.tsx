@@ -2,16 +2,14 @@
 import { useState, ChangeEvent, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic';
 import { ChevronUp, ChevronDown } from "lucide-react"
-import { Program, AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, BN, web3, Wallet } from "@coral-xyz/anchor";
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
 import { useSearchParams } from 'next/navigation'
 import {
-  connection,
   commitmentLevel,
-  lotteryProgramId,
   lotteryProgramInterface,
   mkt,
   dev,
@@ -23,31 +21,25 @@ import {
   devId,
   mktId
 } from "../utils/constants";
-import { Lottery } from '../types/lottery';
-import { useAnchorWallet, useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import axios from 'axios';
 interface userTickets {
   "boughtTickets": number[],
   "boughtTicketsCount": number[],
 }
-const numberIds = [1, 2, 3, 4, 5, 6]
 const voidWallet = (new Keypair());
 
 export default function Component() {
   const searchParams = useSearchParams()
   const urlId = searchParams.get('id')
   const [isHidden, setIsHidden] = useState(false)
-  const [isClaimed, setIsClaimed] = useState(false)
   const [winNumber, setWinNumber] = useState(0)
   const [lotteryNumber, setLotteryNumber] = useState(new BN(2))
   const [matches6Prize, setMatches6Prize] = useState(new BN(0))
   const [matches5Prize, setMatches5Prize] = useState(new BN(0))
   const [matches4Prize, setMatches4Prize] = useState(new BN(0))
   const [matches3Prize, setMatches3Prize] = useState(new BN(0))
-  const [devPub, setDevPub] = useState("")
-  const [mktPub, setMktPub] = useState("")
-  const [opPub, setOpPub] = useState("")
   const [lotteryBal, setLotteryBal] = useState(0)
   const [solPrice, setSolPrice] = useState(0)
   const [userReward, setUserReward] = useState(0)
@@ -69,16 +61,16 @@ export default function Component() {
       const response = await axios.get("/api/getTokenPrice?quote=usd&token=solana")
       setSolPrice(response.data[0].current_price)
     }
-    const provider = new AnchorProvider(connection, voidWallet as any, {
+    const provider = new AnchorProvider(connection, new Wallet(voidWallet), {
       preflightCommitment: commitmentLevel,
     });
     if (!provider) return
     const program: any = new Program(
-      lotteryProgramInterface as any,
+      lotteryProgramInterface,
       provider
     );
     const seeds = [lotteryNumber.toArrayLike(Buffer, "le", 8)];
-    let lotteryPDA = web3.PublicKey.findProgramAddressSync(
+    const lotteryPDA = web3.PublicKey.findProgramAddressSync(
       seeds,
       program.programId
     )[0];
@@ -94,11 +86,10 @@ export default function Component() {
     if (wallet) {
       try {
         const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
-        let userPDA = PublicKey.findProgramAddressSync(
+        const userPDA = PublicKey.findProgramAddressSync(
           seedsUser,
           program.programId
         )[0];
-
         const userInfo = await program.account.userTicket.fetch(userPDA)
         const lotteryInfo = await program.account.lotteryInfo.fetch(lotteryPDA)
         const winNumberLocal = lotteryInfo.winNumber.toNumber()
@@ -115,7 +106,7 @@ export default function Component() {
           console.log("p3", lotteryInfo.partial3Count)
 
           let amount = 0;
-          let final_bal = lotteryInfo.finalBal;
+          const final_bal = lotteryInfo.finalBal;
           for (let i = 0; i < userInfo.boughtTickets.length; i++) {
             if (userInfo.boughtTickets[i] == lotteryInfo.fullMatch) {
               amount += (final_bal * MATCHES_6 / PERCENTAGE_BASE)
@@ -177,11 +168,6 @@ export default function Component() {
     setNewTicketNumbers(newNumbers)
   }
 
-  const handlePickWinner = () => {
-    const key = 1; // Replace with the actual key value needed
-    const batchSize = 10; // Replace with the desired batch size
-    // pickWinner(key, batchSize);
-  };
 
   const buyTicket = async () => {
     // Validate all fields are filled and numbers are between 1 and 99
@@ -199,12 +185,12 @@ export default function Component() {
 
       /* create the program interface combining the idl, program Id, and provider */
       console.log("wallet")
-      const program = new Program(
-        lotteryProgramInterface as any,
+      const program: any = new Program(
+        lotteryProgramInterface,
         provider
       );
       const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
-      let userPDA = PublicKey.findProgramAddressSync(
+      const userPDA = PublicKey.findProgramAddressSync(
         seedsUser,
         program.programId
       )[0];
@@ -217,18 +203,18 @@ export default function Component() {
         console.log(`Account ${userPDA} already initialized`)
       }
       const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
-      let lotteryPDA = web3.PublicKey.findProgramAddressSync(
+      const lotteryPDA = web3.PublicKey.findProgramAddressSync(
         seeds,
         program.programId
       )[0];
       const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
-      let devPDA = web3.PublicKey.findProgramAddressSync(
+      const devPDA = web3.PublicKey.findProgramAddressSync(
         seedsDev,
         program.programId
       )[0];
 
       const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
-      let mktPDA = web3.PublicKey.findProgramAddressSync(
+      const mktPDA = web3.PublicKey.findProgramAddressSync(
         seedsMkt,
         program.programId
       )[0];
@@ -238,8 +224,6 @@ export default function Component() {
       setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
     }
   }
-  const OP_WALLET = new web3.PublicKey("9TFNhwunYo48L5vaW2HLNoCgrwkipy7YZqekAoZABwuK"); // Replace with the actual OP_WALLET key
-
 
   const claimPrize = async () => {
     if (wallet) {
@@ -250,40 +234,38 @@ export default function Component() {
       if (!provider) return;
 
       // Create the program interface combining the IDL, program ID, and provider
-      const program = new Program(
-        lotteryProgramInterface as any,
+      const program:any = new Program(
+        lotteryProgramInterface,
         provider
       );
       const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
-      let lotteryPDA = web3.PublicKey.findProgramAddressSync(
+      const lotteryPDA = web3.PublicKey.findProgramAddressSync(
         seeds,
         program.programId
       )[0];
       const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
-      let userPDA = PublicKey.findProgramAddressSync(
+      const userPDA = PublicKey.findProgramAddressSync(
         seedsUser,
         program.programId
       )[0];
       const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
-      let devPDA = web3.PublicKey.findProgramAddressSync(
+      const devPDA = web3.PublicKey.findProgramAddressSync(
         seedsDev,
         program.programId
       )[0];
 
       const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
-      let mktPDA = web3.PublicKey.findProgramAddressSync(
+      const mktPDA = web3.PublicKey.findProgramAddressSync(
         seedsMkt,
         program.programId
       )[0];
       try {
-        await program.methods.claimPrize()
-          .accounts({
-            lotteryInfo: lotteryPDA, // Replace with the actual lottery account
-            user: userPDA, // Replace with the actual user account
-            dev: devPDA, 
-            mkt: mktPDA
-          })
-          .rpc();
+        await program.methods.claimPrize().accounts({
+          lotteryInfo: lotteryPDA,
+          user: userPDA,
+          dev: devPDA,
+          mkt: mktPDA
+        }).rpc();
 
         console.log('Successfully claimed prize');
       } catch (error) {
@@ -303,7 +285,7 @@ export default function Component() {
       if (!provider) return;
 
       /* Create the program interface combining the IDL, program ID, and provider */
-      const program = new Program(lotteryProgramInterface as any, provider);
+      const program: any = new Program(lotteryProgramInterface, provider);
 
       // Generate the PDA for the Mkt account using the specified seed
       const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
@@ -344,7 +326,7 @@ export default function Component() {
       if (!provider) return;
 
       /* Create the program interface combining the IDL, program ID, and provider */
-      const program = new Program(lotteryProgramInterface as any, provider);
+      const program: any = new Program(lotteryProgramInterface, provider);
 
       // Generate the PDA for the Dev account using the specified seed
       const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
@@ -373,49 +355,6 @@ export default function Component() {
       }
     } else {
       alert("Wallet is not connected. Please connect your wallet.");
-    }
-  };
-
-  const rollover = async () => {
-    if (wallet) {
-      const provider = new AnchorProvider(connection, wallet, {
-        preflightCommitment: commitmentLevel,
-      });
-
-      if (!provider) return;
-
-      // Create the program interface combining the IDL, program ID, and provider
-      const program = new Program(
-        lotteryProgramInterface as any,
-        provider
-      );
-
-      // Check if the connected wallet is the OP wallet
-      if (wallet.publicKey.toString() !== OP_WALLET.toString()) {
-        alert('You do not have permission to perform this action.');
-        return;
-      }
-
-      // Retrieve the old lottery account and new lottery account (replace with actual accounts)
-      // const oldLotteryAccount = oldLotteryAccount; // Replace with the actual old lottery account
-      // const newLotteryAccount = newLotteryAccount; // Replace with the actual new lottery account
-
-      //     try {
-      //       await program.methods.rollover()
-      //         .accounts({
-      //           oldLottery: oldLotteryAccount,
-      //           newLottery: newLotteryAccount,
-      //           signer: wallet.publicKey,
-      //         })
-      //         .rpc();
-      // 
-      //       console.log('Successfully rolled over funds to the new lottery');
-      //     } catch (error) {
-      //       console.error('Error during rollover:', error);
-      //       alert(`Error: ${error.message}`);
-      //     }
-    } else {
-      alert('Wallet is not connected. Please connect your wallet.');
     }
   };
 
@@ -455,15 +394,14 @@ export default function Component() {
           <div className="text-sm text-gray-400">{formatValue(lotteryBal)} SOL</div>
           {userReward > 0 &&
             <div className="bg-gray-700 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Your Prize</h3>
+              <h3 className="font-semibold mb-2">Your Prize Win Number {winNumber}</h3>
               <div className="flex justify-between items-center">
                 <span className="text-2xl text-green-400">{userReward} SOL</span>
                 <button
                   onClick={claimPrize}
-                  disabled={isClaimed}
-                  className={`px-4 py-2 rounded-md ${isClaimed ? 'bg-gray-600 text-gray-400' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                  className={`px-4 py-2 rounded-md bg-green-500 hover:bg-green-600 text-white`}
                 >
-                  {isClaimed ? "Claimed" : "Claim Prize"}
+                  Claim Prize
                 </button>
               </div>
             </div>}
@@ -509,22 +447,6 @@ export default function Component() {
               </button>
             </div>
             <div className="mb-4">
-
-              <button
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
-                onClick={handlePickWinner}
-              >
-                PickWinner
-              </button>
-            </div>
-            <div className="mb-4">
-
-              <button
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
-                onClick={rollover}
-              >
-                Roll Over
-              </button>
             </div>
             {wallet && wallet.publicKey.toString() == dev.toString() &&
               <div className="mb-4">

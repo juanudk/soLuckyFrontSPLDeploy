@@ -1,8 +1,7 @@
 "use client"
-import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-
+import { Suspense } from "react"
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -19,7 +18,6 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { UnsafeBurnerWalletAdapter } from '@solana/wallet-adapter-wallets'
 import {
   WalletModalProvider,
-  WalletMultiButton
 } from '@solana/wallet-adapter-react-ui'
 import { clusterApiUrl } from '@solana/web3.js'
 import { useMemo } from 'react'
@@ -62,7 +60,9 @@ export default function RootLayout({
         <ConnectionProvider endpoint={endpoint}>
           <WalletProvider wallets={wallets}>
             <WalletModalProvider>
+              <Suspense>
               {children}
+              </Suspense>
             </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>

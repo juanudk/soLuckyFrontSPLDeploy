@@ -38,8 +38,8 @@ export default function Component() {
         if (!provider) return;
 
         /* Create the program interface combining the IDL, program ID, and provider */
-        const program = new Program(lotteryProgramInterface as any, provider);
-      let lotteryIdBN = new anchor.BN(lotteryIdStr);
+      const program:any = new Program(lotteryProgramInterface, provider);
+      const lotteryIdBN = new anchor.BN(lotteryIdStr);
       const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8)];
       const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
       setLotteryPDAStr(lotteryPDA.toString())
@@ -55,12 +55,12 @@ export default function Component() {
       if (!provider) return;
 
       /* Create the program interface combining the IDL, program ID, and provider */
-      const program = new Program(lotteryProgramInterface as any, provider);
+      const program: any = new Program(lotteryProgramInterface, provider);
 
       // Generate the PDA for the Dev account using the specified seed
-      let lotteryIdBN = new anchor.BN(lotteryId); // Change as necessary
-      let ticketPriceBN = new anchor.BN(Number(ticketPrice) * LAMPORTS_PER_SOL)
-      let maxTicketsBN = new anchor.BN(maxTickets)
+      const lotteryIdBN = new anchor.BN(lotteryId); // Change as necessary
+      const ticketPriceBN = new anchor.BN(Number(ticketPrice) * LAMPORTS_PER_SOL)
+      const maxTicketsBN = new anchor.BN(maxTickets)
       const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8)];
       // Check if the account exists and fetch its balance if needed
       const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
@@ -88,8 +88,8 @@ export default function Component() {
         if (!provider) return;
 
         // Create the program interface combining the IDL, program ID, and provider
-        const program = new Program(
-          lotteryProgramInterface as any,
+        const program:any = new Program(
+          lotteryProgramInterface,
           provider
         );
 
@@ -103,19 +103,19 @@ export default function Component() {
         )[0];
 
         const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
-        let devPDA = web3.PublicKey.findProgramAddressSync(
+        const devPDA = web3.PublicKey.findProgramAddressSync(
           seedsDev,
           program.programId
         )[0];
 
         const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
-        let mktPDA = web3.PublicKey.findProgramAddressSync(
+        const mktPDA = web3.PublicKey.findProgramAddressSync(
           seedsMkt,
           program.programId
         )[0];
 
         const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
-        let userPDA = PublicKey.findProgramAddressSync(
+        const userPDA = PublicKey.findProgramAddressSync(
           seedsUser,
           program.programId
         )[0];
@@ -159,8 +159,8 @@ export default function Component() {
       if (!provider) return;
 
       // Create the program interface combining the IDL, program ID, and provider
-      const program = new Program(
-        lotteryProgramInterface as any,
+      const program:any = new Program(
+        lotteryProgramInterface,
         provider
       );
 

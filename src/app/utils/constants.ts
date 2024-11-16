@@ -16,6 +16,6 @@ export const MATCHES_5  = new BN(2000);
 export const MATCHES_4  = new BN(1000);
 export const MATCHES_3  = new BN(500);
 export const PERCENTAGE_BASE  = new BN(10000);
-export const lotteryProgramInterface = idl;
+export const lotteryProgramInterface = JSON.parse(JSON.stringify(idl));
 export const devId = new BN(5); 
 export const mktId = new BN(6);
