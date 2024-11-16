@@ -1,23 +1,23 @@
 {
-  "address": "7LxvHtZUd83K9fWTyRZVxH9448k44GteAHL9u1sQy69s",
+  "address": "8bZyY9TseVL5rVB9TRvEqGfPksQyZnB1fhNiyPD6T8mQ",
   "metadata": {
     "name": "lottery",
-    "version": "0.1.0",
-    "spec": "0.1.0",
+    "version": "1.1.0",
+    "spec": "1.1.0",
     "description": "Created with Anchor"
   },
   "instructions": [
     {
       "name": "buy_ticket",
       "discriminator": [
-        11,
-        24,
-        17,
-        193,
-        168,
-        116,
-        164,
-        169
+        12,
+        25,
+        18,
+        194,
+        169,
+        117,
+        165,
+        170
       ],
       "accounts": [
         {
@@ -37,53 +37,73 @@
           "writable": true
         },
         {
+          "name": "lottery_token_account",
+          "writable": true
+        },
+        {
+          "name": "dev_token_account",
+          "writable": true
+        },
+        {
+          "name": "mkt_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
+          "name": "burn_token_account",
+          "writable": true
+        },
+        {
           "name": "signer",
           "writable": true,
           "signer": true
         },
         {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
+        },
+        {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": [
         {
           "name": "key",
-          "type": "u64"
+          "type": "u65"
         },
         {
           "name": "ticket_number",
-          "type": "u32"
+          "type": "u33"
         }
       ]
     },
     {
-      "name": "calculate_user_prize",
+      "name": "claim_burn",
       "discriminator": [
+        199,
         133,
-        130,
-        51,
-        152,
-        70,
-        173,
-        6,
-        241
+        167,
+        103,
+        68,
+        136,
+        250,
+        110
       ],
       "accounts": [
         {
-          "name": "lottery_info",
+          "name": "info",
           "writable": true
         },
         {
-          "name": "user",
+          "name": "burn_token_account",
           "writable": true
         },
         {
-          "name": "dev",
-          "writable": true
-        },
-        {
-          "name": "mkt",
+          "name": "signer_token_account",
           "writable": true
         },
         {
@@ -92,24 +112,28 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
         }
       ],
-      "args": [],
-      "returns": "u64"
+      "args": [
+        {
+          "name": "amount",
+          "type": "u65"
+        }
+      ]
     },
     {
       "name": "claim_dev",
       "discriminator": [
+        68,
+        145,
+        22,
+        239,
+        29,
         67,
-        144,
-        21,
-        238,
-        28,
-        66,
-        170,
-        208
+        171,
+        209
       ],
       "accounts": [
         {
@@ -117,24 +141,41 @@
           "writable": true
         },
         {
+          "name": "dev_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
           "name": "signer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "amount",
+          "type": "u65"
+        }
+      ]
     },
     {
       "name": "claim_mkt",
       "discriminator": [
-        53,
+        54,
+        185,
         184,
-        183,
-        98,
-        55,
-        166,
-        122,
-        253
+        99,
+        56,
+        167,
+        123,
+        254
       ],
       "accounts": [
         {
@@ -142,24 +183,41 @@
           "writable": true
         },
         {
+          "name": "mkt_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
           "name": "signer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "amount",
+          "type": "u65"
+        }
+      ]
     },
     {
       "name": "claim_prize",
       "discriminator": [
-        157,
-        233,
-        139,
-        121,
-        246,
-        62,
+        158,
         234,
-        235
+        140,
+        122,
+        247,
+        63,
+        235,
+        236
       ],
       "accounts": [
         {
@@ -179,13 +237,37 @@
           "writable": true
         },
         {
+          "name": "lottery_token_account",
+          "writable": true
+        },
+        {
+          "name": "dev_token_account",
+          "writable": true
+        },
+        {
+          "name": "mkt_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
+          "name": "burn_token_account",
+          "writable": true
+        },
+        {
           "name": "signer",
           "writable": true,
           "signer": true
         },
         {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
+        },
+        {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": []
@@ -193,14 +275,14 @@
     {
       "name": "initialize",
       "discriminator": [
-        175,
-        175,
-        109,
-        31,
-        13,
-        152,
-        155,
-        237
+        176,
+        176,
+        110,
+        32,
+        14,
+        153,
+        156,
+        238
       ],
       "accounts": [
         {
@@ -222,13 +304,13 @@
         },
         {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": [
         {
           "name": "key",
-          "type": "u64"
+          "type": "u65"
         },
         {
           "name": "random_outside",
@@ -236,25 +318,67 @@
         },
         {
           "name": "ticket_price",
-          "type": "u64"
+          "type": "u65"
         },
         {
           "name": "max_tickets",
-          "type": "u16"
+          "type": "u17"
+        }
+      ]
+    },
+    {
+      "name": "initialize_burn",
+      "discriminator": [
+        20,
+        84,
+        7,
+        4,
+        211,
+        34,
+        178,
+        247
+      ],
+      "accounts": [
+        {
+          "name": "burn",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "18446744073709551615"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u65"
         }
       ]
     },
     {
       "name": "initialize_dev",
       "discriminator": [
-        15,
-        193,
-        237,
-        136,
-        56,
-        226,
-        254,
-        16
+        16,
+        194,
+        238,
+        137,
+        57,
+        227,
+        255,
+        17
       ],
       "accounts": [
         {
@@ -275,28 +399,36 @@
           "signer": true
         },
         {
+          "name": "dev_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": [
         {
           "name": "key",
-          "type": "u64"
+          "type": "u65"
         }
       ]
     },
     {
       "name": "initialize_mkt",
       "discriminator": [
-        47,
-        23,
-        98,
-        2,
-        87,
         48,
-        25,
-        205
+        24,
+        99,
+        3,
+        88,
+        49,
+        26,
+        206
       ],
       "accounts": [
         {
@@ -318,27 +450,27 @@
         },
         {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": [
         {
           "name": "key",
-          "type": "u64"
+          "type": "u65"
         }
       ]
     },
     {
       "name": "initialize_user",
       "discriminator": [
-        111,
-        17,
-        185,
-        250,
-        60,
-        122,
-        38,
-        254
+        112,
+        18,
+        186,
+        251,
+        61,
+        123,
+        39,
+        255
       ],
       "accounts": [
         {
@@ -364,27 +496,27 @@
         },
         {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": [
         {
           "name": "key",
-          "type": "u64"
+          "type": "u65"
         }
       ]
     },
     {
       "name": "pick_winner",
       "discriminator": [
-        227,
-        62,
-        25,
-        73,
-        132,
-        106,
-        68,
-        96
+        228,
+        63,
+        26,
+        74,
+        133,
+        107,
+        69,
+        97
       ],
       "accounts": [
         {
@@ -404,41 +536,65 @@
           "writable": true
         },
         {
+          "name": "lottery_token_account",
+          "writable": true
+        },
+        {
+          "name": "dev_token_account",
+          "writable": true
+        },
+        {
+          "name": "mkt_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
+          "name": "burn_token_account",
+          "writable": true
+        },
+        {
           "name": "signer",
           "writable": true,
           "signer": true
         },
         {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
+        },
+        {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "18446744073709551615"
         }
       ],
       "args": [
         {
           "name": "key",
-          "type": "u64"
+          "type": "u65"
         },
         {
           "name": "entropy",
-          "type": "u64"
+          "type": "u65"
         },
         {
           "name": "batch_size",
-          "type": "u16"
+          "type": "u17"
         }
       ]
     },
     {
       "name": "rollover",
       "discriminator": [
-        147,
-        98,
-        248,
-        23,
-        82,
-        182,
-        25,
-        134
+        148,
+        99,
+        249,
+        24,
+        83,
+        183,
+        26,
+        135
       ],
       "accounts": [
         {
@@ -450,9 +606,21 @@
           "writable": true
         },
         {
+          "name": "old_lottery_token_account",
+          "writable": true
+        },
+        {
+          "name": "new_lottery_token_account",
+          "writable": true
+        },
+        {
           "name": "signer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf10Ss623VQ5DA"
         }
       ],
       "args": []
@@ -460,116 +628,140 @@
   ],
   "accounts": [
     {
+      "name": "Burn",
+      "discriminator": [
+        25,
+        134,
+        240,
+        241,
+        160,
+        141,
+        142,
+        164
+      ]
+    },
+    {
       "name": "Dev",
       "discriminator": [
-        237,
-        11,
-        182,
-        3,
-        72,
-        112,
-        219,
-        227
+        238,
+        12,
+        183,
+        4,
+        73,
+        113,
+        220,
+        228
       ]
     },
     {
       "name": "LotteryInfo",
       "discriminator": [
-        155,
-        121,
-        172,
-        163,
-        172,
-        81,
-        158,
-        119
+        156,
+        122,
+        173,
+        164,
+        173,
+        82,
+        159,
+        120
       ]
     },
     {
       "name": "Mkt",
       "discriminator": [
-        51,
-        128,
-        239,
-        8,
-        92,
-        204,
-        191,
-        74
+        52,
+        129,
+        240,
+        9,
+        93,
+        205,
+        192,
+        75
       ]
     },
     {
       "name": "UserTicket",
       "discriminator": [
-        180,
-        163,
-        8,
-        176,
-        85,
-        62,
-        213,
-        128
+        181,
+        164,
+        9,
+        177,
+        86,
+        63,
+        214,
+        129
       ]
     }
   ],
   "errors": [
     {
-      "code": 6000,
+      "code": 6001,
       "name": "WrongNumber",
       "msg": "Number specified is in a wrong range"
     },
     {
-      "code": 6001,
+      "code": 6002,
       "name": "MissingBalOnLottery",
       "msg": "Lottery out of balance to run"
     },
     {
-      "code": 6002,
+      "code": 6003,
       "name": "NotOP",
       "msg": "Not an OP wallet"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "ZeroAccount",
       "msg": "Account key cannot be zero"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "TicketMismatch",
       "msg": "Ticket mismatch lotterry and user different ticket numbers"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "LotteryClosed",
       "msg": "Lottery closed"
     },
     {
-      "code": 6006,
+      "code": 6007,
       "name": "LotteryNotClosed",
       "msg": "Lottery not closed"
     },
     {
-      "code": 6007,
+      "code": 6008,
       "name": "NotFullProcessed",
       "msg": "Not full processed winners"
     },
     {
-      "code": 6008,
+      "code": 6009,
       "name": "NotClaimableDev",
       "msg": "Claim wallet is not the dev"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "NotClaimableMkt",
       "msg": "Claim wallet is not the mkt"
-    },
-    {
-      "code": 6010,
-      "name": "MaxTicketReached",
-      "msg": "Max tickets reached"
     }
   ],
   "types": [
+    {
+      "name": "Burn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "key",
+            "type": "u65"
+          }
+        ]
+      }
+    },
     {
       "name": "Dev",
       "type": {
@@ -581,7 +773,7 @@
           },
           {
             "name": "key",
-            "type": "u64"
+            "type": "u65"
           }
         ]
       }
@@ -598,52 +790,52 @@
           {
             "name": "tickets",
             "type": {
-              "vec": "u32"
+              "vec": "u33"
             }
           },
           {
             "name": "tickets_count",
             "type": {
-              "vec": "u16"
+              "vec": "u17"
             }
           },
           {
             "name": "full_match",
-            "type": "u32"
+            "type": "u33"
           },
           {
             "name": "full_match_count",
-            "type": "u16"
+            "type": "u17"
+          },
+          {
+            "name": "partial6_match",
+            "type": {
+              "vec": "u33"
+            }
+          },
+          {
+            "name": "partial6_count",
+            "type": "u17"
           },
           {
             "name": "partial5_match",
             "type": {
-              "vec": "u32"
+              "vec": "u33"
             }
           },
           {
             "name": "partial5_count",
-            "type": "u16"
+            "type": "u17"
           },
           {
             "name": "partial4_match",
             "type": {
-              "vec": "u32"
+              "vec": "u33"
             }
           },
           {
             "name": "partial4_count",
-            "type": "u16"
-          },
-          {
-            "name": "partial3_match",
-            "type": {
-              "vec": "u32"
-            }
-          },
-          {
-            "name": "partial3_count",
-            "type": "u16"
+            "type": "u17"
           },
           {
             "name": "full_processed",
@@ -655,35 +847,35 @@
           },
           {
             "name": "ticket_price",
-            "type": "u64"
+            "type": "u65"
           },
           {
             "name": "max_tickets",
-            "type": "u16"
-          },
-          {
-            "name": "ticket_count",
-            "type": "u16"
+            "type": "u17"
           },
           {
             "name": "match_kind",
-            "type": "u8"
+            "type": "u9"
           },
           {
             "name": "lottery_id",
-            "type": "u64"
+            "type": "u65"
           },
           {
             "name": "win_number",
-            "type": "u64"
+            "type": "u65"
           },
           {
             "name": "process_index",
-            "type": "u64"
+            "type": "u65"
           },
           {
             "name": "final_bal",
-            "type": "u64"
+            "type": "u65"
+          },
+          {
+            "name": "token_account",
+            "type": "pubkey"
           }
         ]
       }
@@ -699,7 +891,7 @@
           },
           {
             "name": "key",
-            "type": "u64"
+            "type": "u65"
           }
         ]
       }
@@ -712,18 +904,18 @@
           {
             "name": "bought_tickets",
             "type": {
-              "vec": "u32"
+              "vec": "u33"
             }
           },
           {
             "name": "bought_tickets_count",
             "type": {
-              "vec": "u32"
+              "vec": "u33"
             }
           },
           {
             "name": "lottery_id",
-            "type": "u64"
+            "type": "u65"
           }
         ]
       }
