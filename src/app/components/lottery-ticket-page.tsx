@@ -2,7 +2,7 @@
 import { useState, ChangeEvent, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic';
 import { ChevronUp, ChevronDown } from "lucide-react"
-import { Program, AnchorProvider, BN, web3, Wallet } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
@@ -61,7 +61,7 @@ export default function Component() {
       const response = await axios.get("/api/getTokenPrice?quote=usd&token=solana")
       setSolPrice(response.data[0].current_price)
     }
-    const provider = new AnchorProvider(connection, new Wallet(voidWallet), {
+    const provider = new AnchorProvider(connection, voidWallet as any, {
       preflightCommitment: commitmentLevel,
     });
     if (!provider) return
