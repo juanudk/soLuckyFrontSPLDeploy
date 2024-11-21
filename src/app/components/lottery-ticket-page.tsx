@@ -19,11 +19,14 @@ import {
   MATCHES_4,
   MATCHES_3,
   devId,
-  mktId
+  mktId,
+  op,
+  token
 } from "../utils/constants";
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import axios from 'axios';
+import { getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
 interface userTickets {
   "boughtTickets": number[],
   "boughtTicketsCount": number[],
@@ -189,7 +192,14 @@ export default function Component() {
         lotteryProgramInterface,
         provider
       );
-      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+      const seedsGlobal = [token.toBuffer(), op.toBuffer()];
+      let valueGlobal = PublicKey.findProgramAddressSync(
+        seedsGlobal,
+        program.programId
+      )[0];
+      const global = await program.account.global.fetch(valueGlobal)
+      const lotteryNumber = global.currentLottery
+      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), token.toBuffer(), op.toBuffer()];
       const userPDA = PublicKey.findProgramAddressSync(
         seedsUser,
         program.programId
@@ -198,7 +208,7 @@ export default function Component() {
       const chosedNumber = new BN("1" + newTicketNumbers.join(""))
       if (bal == 0) {
         console.log(`Account ${userPDA} should be initialized`)
-        await program.methods.initializeUser(lotteryNumber).accounts({ user: userPDA }).rpc()
+        await program.methods.initializeUser(lotteryNumber, token, op).accounts({ user: userPDA }).rpc()
       } else {
         console.log(`Account ${userPDA} already initialized`)
       }
@@ -218,10 +228,36 @@ export default function Component() {
         seedsMkt,
         program.programId
       )[0];
+      let newKeypair2ATA = await getAssociatedTokenAddress(
+        token,
+        wallet.publicKey
+      );
 
-      await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({ lotteryInfo: lotteryPDA, dev: devPDA, mkt: mktPDA, user: userPDA }).rpc()
+      let devATA = await getAssociatedTokenAddress(
+        token,
+        dev
+      );
 
-      setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
+      let mktATA = await getAssociatedTokenAddress(
+        token,
+        mkt
+      );
+
+      let lotteryATA = await getAssociatedTokenAddress(
+        token,
+        new PublicKey(lotteryProgramInterface.address)
+      );
+
+      await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({
+        lotteryInfo: lotteryPDA, dev: devPDA, mkt: mktPDA, user: userPDA, 
+        lotteryTokenAccount: lotteryATA,
+        devTokenAccount: devATA,
+        mktTokenAccount: mktATA,
+        signerTokenAccount: newKeypair2ATA,
+        burnTokenAccount: devATA
+      }).rpc()
+
+      // setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
     }
   }
 
@@ -234,7 +270,7 @@ export default function Component() {
       if (!provider) return;
 
       // Create the program interface combining the IDL, program ID, and provider
-      const program:any = new Program(
+      const program: any = new Program(
         lotteryProgramInterface,
         provider
       );
