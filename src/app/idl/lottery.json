@@ -1,5 +1,5 @@
 {
-  "address": "u8TLPUSZpeScaDzKihVWyHWcFz4j1oieUPgAbfpe5oQ",
+  "address": "CYKPofR4QjkeNCpX2NRiJQm7LiHbqeTQhSWW2bgMh2uC",
   "metadata": {
     "name": "lottery",
     "version": "0.1.0",
@@ -34,6 +34,10 @@
         },
         {
           "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "op",
           "writable": true
         },
         {
@@ -82,16 +86,16 @@
       ]
     },
     {
-      "name": "claim_burn",
+      "name": "claim_op",
       "discriminator": [
-        198,
-        132,
-        166,
-        102,
-        67,
-        135,
-        249,
-        109
+        108,
+        155,
+        203,
+        250,
+        236,
+        15,
+        234,
+        140
       ],
       "accounts": [
         {
@@ -99,113 +103,12 @@
           "writable": true
         },
         {
-          "name": "burn_token_account",
-          "writable": true
-        },
-        {
-          "name": "signer_token_account",
-          "writable": true
-        },
-        {
           "name": "signer",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "claim_dev",
-      "discriminator": [
-        67,
-        144,
-        21,
-        238,
-        28,
-        66,
-        170,
-        208
-      ],
-      "accounts": [
-        {
-          "name": "info",
-          "writable": true
-        },
-        {
-          "name": "dev_token_account",
-          "writable": true
-        },
-        {
-          "name": "signer_token_account",
-          "writable": true
-        },
-        {
-          "name": "signer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "claim_mkt",
-      "discriminator": [
-        53,
-        184,
-        183,
-        98,
-        55,
-        166,
-        122,
-        253
-      ],
-      "accounts": [
-        {
-          "name": "info",
-          "writable": true
-        },
-        {
-          "name": "mkt_token_account",
-          "writable": true
-        },
-        {
-          "name": "signer_token_account",
-          "writable": true
-        },
-        {
-          "name": "signer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "claim_prize",
@@ -234,6 +137,10 @@
         },
         {
           "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "op",
           "writable": true
         },
         {
@@ -334,6 +241,10 @@
         },
         {
           "name": "ticket_price",
+          "type": "u64"
+        },
+        {
+          "name": "ticket_tax",
           "type": "u64"
         },
         {
@@ -531,6 +442,48 @@
       ]
     },
     {
+      "name": "initialize_op",
+      "discriminator": [
+        207,
+        87,
+        54,
+        65,
+        234,
+        73,
+        202,
+        10
+      ],
+      "accounts": [
+        {
+          "name": "op",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initialize_user",
       "discriminator": [
         111,
@@ -619,6 +572,10 @@
         },
         {
           "name": "mkt",
+          "writable": true
+        },
+        {
+          "name": "op",
           "writable": true
         },
         {
@@ -783,6 +740,19 @@
       ]
     },
     {
+      "name": "Op",
+      "discriminator": [
+        28,
+        219,
+        164,
+        74,
+        26,
+        147,
+        34,
+        25
+      ]
+    },
+    {
       "name": "UserTicket",
       "discriminator": [
         180,
@@ -856,6 +826,11 @@
       "code": 6011,
       "name": "NotClaimableMkt",
       "msg": "Claim wallet is not the mkt"
+    },
+    {
+      "code": 6012,
+      "name": "NotClaimableOp",
+      "msg": "Claim wallet is not the op"
     }
   ],
   "types": [
@@ -979,6 +954,10 @@
             "type": "u64"
           },
           {
+            "name": "ticket_tax",
+            "type": "u64"
+          },
+          {
             "name": "max_tickets",
             "type": "u16"
           },
@@ -1015,6 +994,22 @@
     },
     {
       "name": "Mkt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "key",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Op",
       "type": {
         "kind": "struct",
         "fields": [

@@ -21,7 +21,8 @@ import {
   devId,
   mktId,
   op,
-  token
+  token,
+  opId
 } from "../utils/constants";
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
@@ -38,7 +39,7 @@ export default function Component() {
   const urlId = searchParams.get('id')
   const [isHidden, setIsHidden] = useState(false)
   const [winNumber, setWinNumber] = useState(0)
-  const [lotteryNumber, setLotteryNumber] = useState(new BN(2))
+  const [lotteryNumber, setLotteryNumber] = useState(new BN(0))
   const [matches6Prize, setMatches6Prize] = useState(new BN(0))
   const [matches5Prize, setMatches5Prize] = useState(new BN(0))
   const [matches4Prize, setMatches4Prize] = useState(new BN(0))
@@ -57,6 +58,22 @@ export default function Component() {
   //// In a real application, you would call an API or smart contract here
   //}
   const loadInfo = useCallback(async () => {
+    const provider = new AnchorProvider(connection, voidWallet as any, {
+      preflightCommitment: commitmentLevel,
+    });
+    const program: any = new Program(
+      lotteryProgramInterface,
+      provider
+    );
+    if (lotteryNumber == 0) {
+      const seedsGlobal = [token.toBuffer(), op.toBuffer()];
+      let valueGlobal = PublicKey.findProgramAddressSync(
+        seedsGlobal,
+        program.programId
+      )[0];
+      const global = await program.account.global.fetch(valueGlobal)
+      setLotteryNumber(global.currentLottery)
+    }
     if (urlId && parseInt(urlId) > 0 && urlId != lotteryNumber) {
       setLotteryNumber(new BN(urlId))
     }
@@ -64,15 +81,8 @@ export default function Component() {
       const response = await axios.get("/api/getTokenPrice?quote=usd&token=solana")
       setSolPrice(response.data[0].current_price)
     }
-    const provider = new AnchorProvider(connection, voidWallet as any, {
-      preflightCommitment: commitmentLevel,
-    });
     if (!provider) return
-    const program: any = new Program(
-      lotteryProgramInterface,
-      provider
-    );
-    const seeds = [lotteryNumber.toArrayLike(Buffer, "le", 8)];
+    const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8), token.toBuffer(), op.toBuffer()];
     const lotteryPDA = web3.PublicKey.findProgramAddressSync(
       seeds,
       program.programId
@@ -86,14 +96,16 @@ export default function Component() {
       setMatches3Prize(bal * MATCHES_3 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
       setLotteryBal(bal / LAMPORTS_PER_SOL)
     }
-    if (wallet) {
+    if (wallet && lotteryNumber > 0) {
       try {
-        const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+        console.log(lotteryNumber.toString())
+        const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), token.toBuffer(), op.toBuffer()]
         const userPDA = PublicKey.findProgramAddressSync(
           seedsUser,
           program.programId
         )[0];
         const userInfo = await program.account.userTicket.fetch(userPDA)
+        console.log(userInfo)
         const lotteryInfo = await program.account.lotteryInfo.fetch(lotteryPDA)
         const winNumberLocal = lotteryInfo.winNumber.toNumber()
         setWinNumber(winNumberLocal)
@@ -199,6 +211,7 @@ export default function Component() {
       )[0];
       const global = await program.account.global.fetch(valueGlobal)
       const lotteryNumber = global.currentLottery
+      console.log(lotteryNumber.toString())
       const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), token.toBuffer(), op.toBuffer()];
       const userPDA = PublicKey.findProgramAddressSync(
         seedsUser,
@@ -212,7 +225,7 @@ export default function Component() {
       } else {
         console.log(`Account ${userPDA} already initialized`)
       }
-      const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
+      const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8), token.toBuffer(), op.toBuffer()];
       const lotteryPDA = web3.PublicKey.findProgramAddressSync(
         seeds,
         program.programId
@@ -226,6 +239,11 @@ export default function Component() {
       const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
       const mktPDA = web3.PublicKey.findProgramAddressSync(
         seedsMkt,
+        program.programId
+      )[0];
+      const seedsOp = [opId.toArrayLike(Buffer, "le", 8)];
+      const opPDA = web3.PublicKey.findProgramAddressSync(
+        seedsOp,
         program.programId
       )[0];
       let newKeypair2ATA = await getAssociatedTokenAddress(
@@ -245,11 +263,16 @@ export default function Component() {
 
       let lotteryATA = await getAssociatedTokenAddress(
         token,
-        new PublicKey(lotteryProgramInterface.address)
+        lotteryPDA,
+        true
       );
 
       await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({
-        lotteryInfo: lotteryPDA, dev: devPDA, mkt: mktPDA, user: userPDA, 
+        lotteryInfo: lotteryPDA,
+        dev: devPDA,
+        mkt: mktPDA,
+        op: opPDA,
+        user: userPDA,
         lotteryTokenAccount: lotteryATA,
         devTokenAccount: devATA,
         mktTokenAccount: mktATA,
@@ -279,7 +302,7 @@ export default function Component() {
         seeds,
         program.programId
       )[0];
-      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+      const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), token.toBuffer(), op.toBuffer()];
       const userPDA = PublicKey.findProgramAddressSync(
         seedsUser,
         program.programId
@@ -312,7 +335,7 @@ export default function Component() {
     }
   };
 
-  const claimMkt = async () => {
+  const claimOp = async () => {
     if (wallet) {
       const provider = new AnchorProvider(connection, wallet, {
         preflightCommitment: commitmentLevel,
@@ -320,74 +343,29 @@ export default function Component() {
 
       if (!provider) return;
 
-      /* Create the program interface combining the IDL, program ID, and provider */
       const program: any = new Program(lotteryProgramInterface, provider);
 
-      // Generate the PDA for the Mkt account using the specified seed
-      const seedsMkt = [mktId.toArrayLike(Buffer, "le", 8)];
-      const mktPDA = web3.PublicKey.findProgramAddressSync(seedsMkt, program.programId)[0];
+      const seedsOp = [opId.toArrayLike(Buffer, "le", 8)];
+      const opPDA = web3.PublicKey.findProgramAddressSync(seedsOp, program.programId)[0];
 
-      // Check if the account exists and fetch its balance if needed
-      const bal = await connection.getBalance(mktPDA);
+      const bal = await connection.getBalance(opPDA);
+      console.log(bal)
       if (bal === 0) {
-        console.log(`Account ${mktPDA} is not initialized`);
+        console.log(`Account ${opPDA} is not initialized`);
         return;
       }
 
-      // Call the `claimMkt` method on the program
       try {
-        await program.methods.claimMkt()
-          .accounts({
-            info: mktPDA,
-            signer: wallet.publicKey,
-          })
-          .rpc();
-
-        console.log("Successfully claimed market prize");
-      } catch (error) {
-        console.error("Error claiming market prize:", error);
-        // alert(`Error: ${error.message}`);
-      }
-    } else {
-      alert("Wallet is not connected. Please connect your wallet.");
-    }
-  };
-
-  const claimDev = async () => {
-    if (wallet) {
-      const provider = new AnchorProvider(connection, wallet, {
-        preflightCommitment: commitmentLevel,
-      });
-
-      if (!provider) return;
-
-      /* Create the program interface combining the IDL, program ID, and provider */
-      const program: any = new Program(lotteryProgramInterface, provider);
-
-      // Generate the PDA for the Dev account using the specified seed
-      const seedsDev = [devId.toArrayLike(Buffer, "le", 8)];
-      const devPDA = web3.PublicKey.findProgramAddressSync(seedsDev, program.programId)[0];
-
-      // Check if the account exists and fetch its balance if needed
-      const bal = await connection.getBalance(devPDA);
-      if (bal === 0) {
-        console.log(`Account ${devPDA} is not initialized`);
-        return;
-      }
-
-      // Call the `claimDev` method on the program
-      try {
-        await program.methods.claimDev()
-          .accounts({
-            info: devPDA,
-            signer: wallet.publicKey,
-          })
-          .rpc();
-
+        await program.methods.claimOp()
+          .accounts(
+            {
+              info: opPDA,
+              signer: wallet.publicKey,
+            }
+          ).rpc();
         console.log("Successfully claimed developer prize");
       } catch (error) {
         console.error("Error claiming developer prize:", error);
-        // alert(`Error: ${error.message}`);
       }
     } else {
       alert("Wallet is not connected. Please connect your wallet.");
@@ -484,24 +462,14 @@ export default function Component() {
             </div>
             <div className="mb-4">
             </div>
-            {wallet && wallet.publicKey.toString() == dev.toString() &&
+            {wallet && wallet.publicKey.toString() == op.toString() &&
               <div className="mb-4">
 
                 <button
                   className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
-                  onClick={claimDev}
+                  onClick={claimOp}
                 >
-                  Claim Dev Funds
-                </button>
-              </div>}
-            {wallet && wallet.publicKey.toString() == mkt.toString() &&
-              <div className="mb-4">
-
-                <button
-                  className="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-md"
-                  onClick={claimMkt}
-                >
-                  Claim Mkt Funds
+                  Claim Op Funds
                 </button>
               </div>}
 

@@ -1,6 +1,6 @@
 import idl from "../idl/lottery.json";
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import {BN} from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 
 export const commitmentLevel = "processed";
 export const endpoint =
@@ -12,11 +12,13 @@ export const dev = new PublicKey("CFAUQvT5MA5xJemHwRcbzCQC3UPRyDeQVr1cqo4JbEAp")
 export const mkt = new PublicKey("CvmWdoJiH5qRQywPhNdESMC6LHMEYqYgMvgJMuwFQyQw");
 export const op = new PublicKey("9TFNhwunYo48L5vaW2HLNoCgrwkipy7YZqekAoZABwuK");
 export const token = new PublicKey("HnHYLNZVhn4m1oGv7H4iJm883mn5b69foyRx1ZF5iq1j");
-export const MATCHES_6  = new BN(4000);
-export const MATCHES_5  = new BN(2000);
-export const MATCHES_4  = new BN(1000);
-export const MATCHES_3  = new BN(500);
-export const PERCENTAGE_BASE  = new BN(10000);
+export const MATCHES_6 = new BN(4000);
+export const MATCHES_5 = new BN(2000);
+export const MATCHES_4 = new BN(1000);
+export const MATCHES_3 = new BN(500);
+export const PERCENTAGE_BASE = new BN(10000);
 export const lotteryProgramInterface = JSON.parse(JSON.stringify(idl));
-export const devId = new BN(5); 
-export const mktId = new BN(6);
+export const devId = new BN(-1);
+export const mktId = new BN(-2);
+export const burnId = new BN(-3);
+export const opId = new BN(-4);
