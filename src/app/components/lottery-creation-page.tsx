@@ -1,23 +1,29 @@
 'use client'
 
-import { useState, ChangeEvent } from 'react'
+import { useState, ChangeEvent, useCallback, useEffect } from 'react'
 import { ChevronUp, ChevronDown } from "lucide-react"
 import dynamic from 'next/dynamic';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program, BN, web3 } from '@coral-xyz/anchor';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { commitmentLevel, devId, lotteryProgramInterface, mktId } from '../utils/constants';
+import { commitmentLevel, dev, devId, lotteryProgramInterface, mkt, mktId, op, opId } from '../utils/constants';
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
 import * as anchor from "@coral-xyz/anchor";
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 
 export default function Component() {
   const [isHidden, setIsHidden] = useState(false)
   const [lotteryId, setLotteryId] = useState('')
   const [isRandomOutside, setIsRandomOutside] = useState<boolean>(false)
   const [ticketPrice, setTicketPrice] = useState('')
+  const [ticketTax, setTicketTax] = useState('')
+  const [token, setToken] = useState('')
+  const [owner, setOwner] = useState('')
+  const [tokenPick, setTokenPick] = useState('')
+  const [ownerPick, setOwnerPick] = useState('')
   const [lotteryPDA, setLotteryPDA] = useState('')
   const [maxTickets, setMaxTickets] = useState('')
   const [lotteryIdPick, setLotteryIdPick] = useState(0)
@@ -28,23 +34,36 @@ export default function Component() {
   const [lotteryPDAStr, setLotteryPDAStr] = useState('')
   const wallet = useAnchorWallet();
   const { connection } = useConnection();
-  const handleSetLotteryId = async (lotteryIdStr: string) =>{
-    if(wallet){
-      setLotteryId(lotteryIdStr)
+  const handleSetLotteryId = async (lotteryIdStr: string) => {
+    setLotteryId(lotteryIdStr)
+  }
+  const handleSetToken = async (tokenStr: string) => {
+    setToken(tokenStr)
+  }
+  const handleSetOwner = async (ownerStr: string) => {
+    setOwner(ownerStr)
+  }
+  const genLotteryPDA = useCallback(async () => {
+    if (wallet && lotteryId && token && owner) {
       const provider = new AnchorProvider(connection, wallet, {
-          preflightCommitment: commitmentLevel,
-        });
+        preflightCommitment: commitmentLevel,
+      });
 
-        if (!provider) return;
+      if (!provider) return;
 
-        /* Create the program interface combining the IDL, program ID, and provider */
-      const program:any = new Program(lotteryProgramInterface, provider);
-      const lotteryIdBN = new anchor.BN(lotteryIdStr);
-      const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8)];
+      const program: any = new Program(lotteryProgramInterface, provider);
+      const lotteryIdBN = new anchor.BN(lotteryId);
+      const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8), new PublicKey(token).toBuffer(), new PublicKey(owner).toBuffer()];
       const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
       setLotteryPDAStr(lotteryPDA.toString())
+    } else {
+      setLotteryPDAStr("")
     }
-  }
+  }, [lotteryId, token, owner])
+
+  useEffect(() => {
+    genLotteryPDA()
+  }, [lotteryId, token, owner])
   const handleCreateLottery = async () => {
     console.log('Creating lottery with:', { lotteryId, isRandomOutside, ticketPrice, maxTickets })
     if (wallet) {
@@ -54,22 +73,20 @@ export default function Component() {
 
       if (!provider) return;
 
-      /* Create the program interface combining the IDL, program ID, and provider */
       const program: any = new Program(lotteryProgramInterface, provider);
 
-      // Generate the PDA for the Dev account using the specified seed
-      const lotteryIdBN = new anchor.BN(lotteryId); // Change as necessary
+      // const lotteryIdBN = new anchor.BN(lotteryId);
+      const lotteryIdBN = new anchor.BN(2);
       const ticketPriceBN = new anchor.BN(Number(ticketPrice) * LAMPORTS_PER_SOL)
-      const maxTicketsBN = new anchor.BN(maxTickets)
-      const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8)];
-      // Check if the account exists and fetch its balance if needed
+      const ticketTaxBN = new anchor.BN(Number(ticketPrice) * LAMPORTS_PER_SOL)
+      const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8), new PublicKey(token).toBuffer(), new PublicKey(owner).toBuffer()];
       const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
       const bal = await connection.getBalance(lotteryPDA);
       if (bal > 0) {
         console.log(`Account ${lotteryPDA} is already initialized`);
         return;
       } else {
-        await program.methods.initialize(lotteryIdBN, isRandomOutside, ticketPriceBN, maxTicketsBN).accounts({ lotteryInfo: lotteryPDA }).rpc()
+        await program.methods.initialize(lotteryIdBN, new PublicKey(token), wallet.publicKey, true, ticketPriceBN, ticketTaxBN, maxTickets).accounts({ lotteryInfo: lotteryPDA } as any).rpc()
         setLotteryPDA(`${lotteryPDA}`)
       }
       alert('Lottery created successfully!')
@@ -79,7 +96,7 @@ export default function Component() {
   }
 
   const pickWinner = async () => {
-    if (lotteryIdPick > 0 && entropy > 0 && batchSize > 0) {
+    if (lotteryIdPick > 0 && entropy > 0 && batchSize > 0 && tokenPick && ownerPick) {
       if (wallet) {
         const provider = new AnchorProvider(connection, wallet, {
           preflightCommitment: commitmentLevel,
@@ -88,7 +105,7 @@ export default function Component() {
         if (!provider) return;
 
         // Create the program interface combining the IDL, program ID, and provider
-        const program:any = new Program(
+        const program: any = new Program(
           lotteryProgramInterface,
           provider
         );
@@ -114,7 +131,10 @@ export default function Component() {
           program.programId
         )[0];
 
-        const seedsUser = [lotteryNumber.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()];
+
+        let lotteryIdBN = new BN(lotteryIdPick)
+        const tokenPk = new PublicKey(tokenPick)
+        const seedsUser = [lotteryIdBN.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), tokenPk.toBuffer(), op.toBuffer()];
         const userPDA = PublicKey.findProgramAddressSync(
           seedsUser,
           program.programId
@@ -124,17 +144,46 @@ export default function Component() {
           const bal = await connection.getBalance(userPDA);
           if (bal == 0) {
             console.log(`Account ${userPDA} should be initialized`)
-            await program.methods.initializeUser(lotteryNumber).accounts({ user: userPDA }).rpc()
+            await program.methods.initializeUser(lotteryNumber, tokenPk, op).accounts({ user: userPDA }).rpc()
           } else {
             console.log(`Account ${userPDA} already initialized`)
           }
-
+          const seedsOp = [opId.toArrayLike(Buffer, "le", 8)];
+          let opPDA = anchor.web3.PublicKey.findProgramAddressSync(
+            seedsOp,
+            program.programId
+          )[0];
+          const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8), new PublicKey(tokenPick).toBuffer(), new PublicKey(ownerPick).toBuffer()];
+          const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
+          let lotteryATA = await getAssociatedTokenAddress(
+            tokenPk,
+            lotteryPDA,
+            true
+          );
+          let devATA = await getAssociatedTokenAddress(
+            tokenPk,
+            dev
+          );
+          let mktATA = await getAssociatedTokenAddress(
+            tokenPk,
+            mkt
+          );
+          let signerATA = await getAssociatedTokenAddress(
+            tokenPk,
+            wallet.publicKey
+          );
           await program.methods.pickWinner(lotteryNumber, new anchor.BN(entropy), new anchor.BN(batchSize))
             .accounts({
               lotteryInfo: lotteryPDA,
               dev: devPDA,
               mkt: mktPDA,
               user: userPDA,
+              op: opPDA,
+              lotteryTokenAccount: lotteryATA,
+              devTokenAccount: devATA,
+              mktTokenAccount: mktATA,
+              signerTokenAccount: signerATA,
+              burnTokenAccount: devATA,
             })
             .rpc();
 
@@ -147,7 +196,7 @@ export default function Component() {
         alert('Wallet is not connected. Please connect your wallet.');
       }
     } else {
-      alert("Invalid lottery Id entropy or batch size")
+      alert("Invalid lottery Id entropy, batch size, token or owner")
     }
   };
   const rollover = async () => {
@@ -159,7 +208,7 @@ export default function Component() {
       if (!provider) return;
 
       // Create the program interface combining the IDL, program ID, and provider
-      const program:any = new Program(
+      const program: any = new Program(
         lotteryProgramInterface,
         provider
       );
@@ -212,6 +261,32 @@ export default function Component() {
                 className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
+            <div>
+              <label htmlFor="token" className="block text-sm font-medium mb-1">
+                Token
+              </label>
+              <input
+                id="token"
+                type="text"
+                placeholder="Enter token"
+                value={token}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => handleSetToken(e.target.value)}
+                className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="owner" className="block text-sm font-medium mb-1">
+                Owner
+              </label>
+              <input
+                id="owner"
+                type="text"
+                placeholder="Enter lottery ID"
+                value={owner}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => handleSetOwner(e.target.value)}
+                className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
             <div className="flex items-center space-x-2">
               <button
                 role="switch"
@@ -231,14 +306,27 @@ export default function Component() {
             </div>
             <div>
               <label htmlFor="ticketPrice" className="block text-sm font-medium mb-1">
-                Ticket Price (SOL)
+                Ticket Price (Token)
               </label>
               <input
                 id="ticketPrice"
                 type="number"
-                placeholder="Enter ticket price"
+                placeholder="Enter ticket price ex: 1"
                 value={ticketPrice}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setTicketPrice(e.target.value)}
+                className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="ticketTax" className="block text-sm font-medium mb-1">
+                Ticket Tax (SOL)
+              </label>
+              <input
+                id="ticketTax"
+                type="number"
+                placeholder="Enter ticket tax ex: 0.01"
+                value={ticketTax}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setTicketTax(e.target.value)}
                 className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
@@ -275,6 +363,32 @@ export default function Component() {
               placeholder="Enter lottery id to pick winner"
               value={lotteryIdPick}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setLotteryIdPick(parseInt(e.target.value))}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="token" className="block text-sm font-medium mb-1">
+              Token Pick Winner
+            </label>
+            <input
+              id="token"
+              type="text"
+              placeholder="Enter token"
+              value={tokenPick}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setTokenPick(e.target.value)}
+              className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="owner" className="block text-sm font-medium mb-1">
+              Owner Pick Winner
+            </label>
+            <input
+              id="owner"
+              type="text"
+              placeholder="Enter lottery ID"
+              value={ownerPick}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setOwnerPick(e.target.value)}
               className="w-full bg-gray-700 text-white border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>

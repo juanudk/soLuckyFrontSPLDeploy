@@ -246,7 +246,7 @@ export default function Component() {
         seedsOp,
         program.programId
       )[0];
-      let newKeypair2ATA = await getAssociatedTokenAddress(
+      let signerATA = await getAssociatedTokenAddress(
         token,
         wallet.publicKey
       );
@@ -276,8 +276,8 @@ export default function Component() {
         lotteryTokenAccount: lotteryATA,
         devTokenAccount: devATA,
         mktTokenAccount: mktATA,
-        signerTokenAccount: newKeypair2ATA,
-        burnTokenAccount: devATA
+        signerTokenAccount: signerATA,
+        burnTokenAccount: devATA,
       }).rpc()
 
       // setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
