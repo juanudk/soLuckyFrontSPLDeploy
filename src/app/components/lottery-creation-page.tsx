@@ -5,14 +5,14 @@ import { ChevronUp, ChevronDown } from "lucide-react"
 import dynamic from 'next/dynamic';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program, BN, web3 } from '@coral-xyz/anchor';
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import { commitmentLevel, dev, devId, lotteryProgramInterface, mkt, mktId, op, opId } from '../utils/constants';
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
 import * as anchor from "@coral-xyz/anchor";
-import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { createTransferInstruction, getAssociatedTokenAddress, TOKEN_PROGRAM_ID, transfer, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 
 export default function Component() {
   const [isHidden, setIsHidden] = useState(false)
@@ -215,10 +215,66 @@ export default function Component() {
 
 
       try {
+        const oldLotteryData = await program.account.lotteryInfo.fetch(oldLottery)
+        const tokenPk = oldLotteryData.token
+        const ownerPk = oldLotteryData.owner
+        const seedsGlobal = [tokenPk.toBuffer(), ownerPk.toBuffer()];
+        let globalPDA = PublicKey.findProgramAddressSync(
+          seedsGlobal,
+          program.programId
+        )[0];
+        let oldLotteryATA = await getAssociatedTokenAddress(
+          tokenPk,
+          new PublicKey(oldLottery),
+          true
+        );
+        let newLotteryATA = await getAssociatedTokenAddress(
+          tokenPk,
+          new PublicKey(newLottery),
+          true
+        );
+        let signerATA = await getAssociatedTokenAddress(
+          tokenPk,
+          wallet.publicKey
+        );
+
+        const recipientAccountInfo = await connection.getAccountInfo(newLotteryATA);
+        const instructions = [];
+
+        if (!recipientAccountInfo) {
+          instructions.push(
+            createAssociatedTokenAccountInstruction(
+              wallet.publicKey,
+              newLotteryATA,
+              new PublicKey(newLottery),
+              tokenPk
+            )
+          );
+        }
+        if (instructions.length > 0) {
+          const transaction = new Transaction().add(...instructions);
+          transaction.feePayer = wallet.publicKey;
+          transaction.recentBlockhash = (await connection.getLatestBlockhash('finalized')).blockhash
+
+          // Sign and send the transaction
+          const signedTransaction = await wallet.signTransaction(transaction);
+          const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+          });
+
+          // Confirm the transaction
+          await connection.confirmTransaction(signature, 'confirmed');
+          console.log("Transaction successful:", signature);
+        }
+
         await program.methods.rollover()
           .accounts({
             oldLottery,
             newLottery,
+            global: globalPDA,
+            oldLotteryTokenAccount: oldLotteryATA,
+            newLotteryTokenAccount: newLotteryATA
           })
           .rpc();
 
