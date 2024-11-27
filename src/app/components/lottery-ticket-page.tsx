@@ -310,7 +310,7 @@ export default function Component() {
         lotteryProgramInterface,
         provider
       );
-      const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8)];
+      const seeds = [new BN(lotteryNumber).toArrayLike(Buffer, "le", 8), token.toBuffer(), op.toBuffer()];
       const lotteryPDA = web3.PublicKey.findProgramAddressSync(
         seeds,
         program.programId
@@ -362,6 +362,7 @@ export default function Component() {
         wallet.publicKey
       );
       try {
+        console.log(lotteryNumber.toString())
         await program.methods.claimPrize(lotteryNumber, tokenPk, ownerPk).accounts({
           signer: wallet.publicKey,
           lotteryInfo: lotteryPDA,
