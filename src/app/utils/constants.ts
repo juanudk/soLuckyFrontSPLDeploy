@@ -12,6 +12,7 @@ export const dev = new PublicKey("CFAUQvT5MA5xJemHwRcbzCQC3UPRyDeQVr1cqo4JbEAp")
 export const mkt = new PublicKey("CvmWdoJiH5qRQywPhNdESMC6LHMEYqYgMvgJMuwFQyQw");
 export const op = new PublicKey("9TFNhwunYo48L5vaW2HLNoCgrwkipy7YZqekAoZABwuK");
 export const token = new PublicKey("HnHYLNZVhn4m1oGv7H4iJm883mn5b69foyRx1ZF5iq1j");
+export const tokenSymbol = "UKN";
 export const MATCHES_6 = new BN(4000);
 export const MATCHES_5 = new BN(2000);
 export const MATCHES_4 = new BN(1000);

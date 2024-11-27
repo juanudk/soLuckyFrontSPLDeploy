@@ -22,7 +22,8 @@ import {
   mktId,
   op,
   token,
-  opId
+  opId,
+  tokenSymbol
 } from "../utils/constants";
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
@@ -46,6 +47,7 @@ export default function Component() {
   const [matches3Prize, setMatches3Prize] = useState(new BN(0))
   const [lotteryBal, setLotteryBal] = useState(0)
   const [solPrice, setSolPrice] = useState(0)
+  const [sessionBoughtTicketsCount, setSessionBoughtTicketsCount] = useState(0)
   const [userReward, setUserReward] = useState(0)
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -87,14 +89,20 @@ export default function Component() {
       seeds,
       program.programId
     )[0];
-    console.log(connection)
+    const tokenPk = new PublicKey(token)
+    let lotteryATA = await getAssociatedTokenAddress(
+      tokenPk,
+      lotteryPDA,
+      true
+    );
     if (lotteryBal == 0) {
-      const bal = await connection.getBalance(lotteryPDA)
-      setMatches6Prize(bal * MATCHES_6 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
-      setMatches5Prize(bal * MATCHES_5 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
-      setMatches4Prize(bal * MATCHES_4 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
-      setMatches3Prize(bal * MATCHES_3 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
-      setLotteryBal(bal / LAMPORTS_PER_SOL)
+      const lotteryATAInfo = await connection.getTokenAccountBalance(lotteryATA)
+      const lotterySPLBal = new BN(lotteryATAInfo.value.amount)
+      setMatches6Prize(lotterySPLBal * MATCHES_6 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
+      setMatches5Prize(lotterySPLBal * MATCHES_5 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
+      setMatches4Prize(lotterySPLBal * MATCHES_4 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
+      setMatches3Prize(lotterySPLBal * MATCHES_3 / PERCENTAGE_BASE / LAMPORTS_PER_SOL)
+      setLotteryBal(lotterySPLBal / LAMPORTS_PER_SOL)
     }
     if (wallet && lotteryNumber > 0) {
       try {
@@ -170,12 +178,12 @@ export default function Component() {
         console.log(e)
       }
     }
-  }, [wallet, solPrice, lotteryBal])
+  }, [wallet, solPrice, lotteryBal, sessionBoughtTicketsCount])
 
   useEffect(() => {
     console.log("here use effect")
     loadInfo()
-  }, [wallet, solPrice, lotteryBal])
+  }, [wallet, solPrice, lotteryBal, sessionBoughtTicketsCount])
 
   const handleNumberChange = (index: number, value: string) => {
     const newNumbers = [...newTicketNumbers]
@@ -267,7 +275,7 @@ export default function Component() {
         true
       );
 
-      await program.methods.buyTicket(lotteryNumber, chosedNumber).accounts({
+      await program.methods.buyTicket(lotteryNumber, token, op, chosedNumber).accounts({
         lotteryInfo: lotteryPDA,
         dev: devPDA,
         mkt: mktPDA,
@@ -279,8 +287,8 @@ export default function Component() {
         signerTokenAccount: signerATA,
         burnTokenAccount: devATA,
       }).rpc()
-
-      // setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
+      setSessionBoughtTicketsCount(sessionBoughtTicketsCount + 1)
+      setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
     }
   }
 
@@ -405,12 +413,12 @@ export default function Component() {
             <span className="text-xl">Prize Pot</span>
             <span className="text-3xl text-purple-400">~${formatSolUSD(lotteryBal)}</span>
           </div>
-          <div className="text-sm text-gray-400">{formatValue(lotteryBal)} SOL</div>
+          <div className="text-sm text-gray-400">{formatValue(lotteryBal)} {tokenSymbol}</div>
           {userReward > 0 &&
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Your Prize Win Number {winNumber}</h3>
               <div className="flex justify-between items-center">
-                <span className="text-2xl text-green-400">{userReward} SOL</span>
+                <span className="text-2xl text-green-400">{userReward} {tokenSymbol}</span>
                 <button
                   onClick={claimPrize}
                   className={`px-4 py-2 rounded-md bg-green-500 hover:bg-green-600 text-white`}
@@ -479,10 +487,10 @@ export default function Component() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: 'Match first 3', value: `${formatValue(matches3Prize)} SOL`, subvalue: `$${formatSolUSD(matches3Prize)}` },
-              { label: 'Match first 4', value: `${formatValue(matches4Prize)} SOL`, subvalue: `$${formatSolUSD(matches4Prize)}` },
-              { label: 'Match first 5', value: `${formatValue(matches5Prize)} SOL`, subvalue: `$${formatSolUSD(matches5Prize)}` },
-              { label: 'Match all 6', value: `${formatValue(matches6Prize)} SOL`, subvalue: `$${formatSolUSD(matches6Prize)}` },
+              { label: 'Match first 3', value: `${formatValue(matches3Prize)} ${tokenSymbol}`, subvalue: `$${formatSolUSD(matches3Prize)}` },
+              { label: 'Match first 4', value: `${formatValue(matches4Prize)} ${tokenSymbol}`, subvalue: `$${formatSolUSD(matches4Prize)}` },
+              { label: 'Match first 5', value: `${formatValue(matches5Prize)} ${tokenSymbol}`, subvalue: `$${formatSolUSD(matches5Prize)}` },
+              { label: 'Match all 6', value: `${formatValue(matches6Prize)} ${tokenSymbol}`, subvalue: `$${formatSolUSD(matches6Prize)}` },
             ].map((item, index) => (
               <div key={index} className="text-sm">
                 <div className="text-purple-400">{item.label}</div>

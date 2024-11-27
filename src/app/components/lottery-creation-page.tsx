@@ -130,11 +130,12 @@ export default function Component() {
           seedsMkt,
           program.programId
         )[0];
-
+  
 
         let lotteryIdBN = new BN(lotteryIdPick)
         const tokenPk = new PublicKey(tokenPick)
-        const seedsUser = [lotteryIdBN.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), tokenPk.toBuffer(), op.toBuffer()];
+        const ownerPk =new PublicKey(ownerPick)
+        const seedsUser = [lotteryIdBN.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), tokenPk.toBuffer(), ownerPk.toBuffer()];
         const userPDA = PublicKey.findProgramAddressSync(
           seedsUser,
           program.programId
@@ -144,7 +145,7 @@ export default function Component() {
           const bal = await connection.getBalance(userPDA);
           if (bal == 0) {
             console.log(`Account ${userPDA} should be initialized`)
-            await program.methods.initializeUser(lotteryNumber, tokenPk, op).accounts({ user: userPDA }).rpc()
+            await program.methods.initializeUser(lotteryNumber, tokenPk, ownerPk).accounts({ user: userPDA }).rpc()
           } else {
             console.log(`Account ${userPDA} already initialized`)
           }
@@ -153,7 +154,7 @@ export default function Component() {
             seedsOp,
             program.programId
           )[0];
-          const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8), new PublicKey(tokenPick).toBuffer(), new PublicKey(ownerPick).toBuffer()];
+          const seedsLottery = [lotteryIdBN.toArrayLike(Buffer, "le", 8), new PublicKey(tokenPick).toBuffer(), ownerPk.toBuffer()];
           const lotteryPDA = anchor.web3.PublicKey.findProgramAddressSync(seedsLottery, program.programId)[0];
           let lotteryATA = await getAssociatedTokenAddress(
             tokenPk,
@@ -172,7 +173,7 @@ export default function Component() {
             tokenPk,
             wallet.publicKey
           );
-          await program.methods.pickWinner(lotteryNumber, new anchor.BN(entropy), new anchor.BN(batchSize))
+          await program.methods.pickWinner(lotteryNumber, tokenPk, ownerPk, new anchor.BN(entropy), new anchor.BN(batchSize))
             .accounts({
               lotteryInfo: lotteryPDA,
               dev: devPDA,
@@ -218,6 +219,7 @@ export default function Component() {
         const oldLotteryData = await program.account.lotteryInfo.fetch(oldLottery)
         const tokenPk = oldLotteryData.token
         const ownerPk = oldLotteryData.owner
+        const lotteryNumber = oldLotteryData.lotteryId
         const seedsGlobal = [tokenPk.toBuffer(), ownerPk.toBuffer()];
         let globalPDA = PublicKey.findProgramAddressSync(
           seedsGlobal,
@@ -268,7 +270,7 @@ export default function Component() {
           console.log("Transaction successful:", signature);
         }
 
-        await program.methods.rollover()
+        await program.methods.rollover(lotteryNumber, tokenPk, ownerPk)
           .accounts({
             oldLottery,
             newLottery,

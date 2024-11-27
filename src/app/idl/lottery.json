@@ -1,5 +1,5 @@
 {
-  "address": "GqzFgUvrZ3XWuB3StFCmBguUyTnAsXN1qeR2p7GShqWV",
+  "address": "AJdniVjxX2ZzidiwQmmQPwvyj1ZRp9H3zZ3ojcFpoaYF",
   "metadata": {
     "name": "lottery",
     "version": "0.1.0",
@@ -997,6 +997,10 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
           {
             "name": "tickets",
             "type": {
