@@ -1,5 +1,5 @@
 {
-  "address": "CYKPofR4QjkeNCpX2NRiJQm7LiHbqeTQhSWW2bgMh2uC",
+  "address": "GqzFgUvrZ3XWuB3StFCmBguUyTnAsXN1qeR2p7GShqWV",
   "metadata": {
     "name": "lottery",
     "version": "0.1.0",
@@ -22,7 +22,23 @@
       "accounts": [
         {
           "name": "lottery_info",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              },
+              {
+                "kind": "arg",
+                "path": "token"
+              },
+              {
+                "kind": "arg",
+                "path": "lottery_owner"
+              }
+            ]
+          }
         },
         {
           "name": "user",
@@ -80,6 +96,14 @@
           "type": "u64"
         },
         {
+          "name": "token",
+          "type": "pubkey"
+        },
+        {
+          "name": "lottery_owner",
+          "type": "pubkey"
+        },
+        {
           "name": "ticket_number",
           "type": "u32"
         }
@@ -125,7 +149,23 @@
       "accounts": [
         {
           "name": "lottery_info",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              },
+              {
+                "kind": "arg",
+                "path": "token"
+              },
+              {
+                "kind": "arg",
+                "path": "lottery_owner"
+              }
+            ]
+          }
         },
         {
           "name": "user",
@@ -177,7 +217,20 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        },
+        {
+          "name": "token",
+          "type": "pubkey"
+        },
+        {
+          "name": "lottery_owner",
+          "type": "pubkey"
+        }
+      ]
     },
     {
       "name": "initialize",
@@ -560,7 +613,23 @@
       "accounts": [
         {
           "name": "lottery_info",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              },
+              {
+                "kind": "arg",
+                "path": "token"
+              },
+              {
+                "kind": "arg",
+                "path": "lottery_owner"
+              }
+            ]
+          }
         },
         {
           "name": "user",
@@ -618,6 +687,14 @@
           "type": "u64"
         },
         {
+          "name": "token",
+          "type": "pubkey"
+        },
+        {
+          "name": "lottery_owner",
+          "type": "pubkey"
+        },
+        {
           "name": "entropy",
           "type": "u64"
         },
@@ -642,7 +719,23 @@
       "accounts": [
         {
           "name": "old_lottery",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "key"
+              },
+              {
+                "kind": "arg",
+                "path": "token"
+              },
+              {
+                "kind": "arg",
+                "path": "lottery_owner"
+              }
+            ]
+          }
         },
         {
           "name": "new_lottery",
@@ -670,7 +763,20 @@
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "key",
+          "type": "u64"
+        },
+        {
+          "name": "token",
+          "type": "pubkey"
+        },
+        {
+          "name": "lottery_owner",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
