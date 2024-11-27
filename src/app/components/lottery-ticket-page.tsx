@@ -23,7 +23,9 @@ import {
   op,
   token,
   opId,
-  tokenSymbol
+  tokenSymbol,
+  burnId,
+  burn
 } from "../utils/constants";
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
@@ -178,12 +180,12 @@ export default function Component() {
         console.log(e)
       }
     }
-  }, [wallet, solPrice, lotteryBal, sessionBoughtTicketsCount])
+  }, [wallet, solPrice, lotteryBal, sessionBoughtTicketsCount, urlId])
 
   useEffect(() => {
     console.log("here use effect")
     loadInfo()
-  }, [wallet, solPrice, lotteryBal, sessionBoughtTicketsCount])
+  }, [wallet, solPrice, lotteryBal, sessionBoughtTicketsCount, urlId])
 
   const handleNumberChange = (index: number, value: string) => {
     const newNumbers = [...newTicketNumbers]
@@ -274,7 +276,10 @@ export default function Component() {
         lotteryPDA,
         true
       );
-
+      let burnATA = await getAssociatedTokenAddress(
+        token,
+        burn
+      );
       await program.methods.buyTicket(lotteryNumber, token, op, chosedNumber).accounts({
         lotteryInfo: lotteryPDA,
         dev: devPDA,
@@ -285,7 +290,7 @@ export default function Component() {
         devTokenAccount: devATA,
         mktTokenAccount: mktATA,
         signerTokenAccount: signerATA,
-        burnTokenAccount: devATA,
+        burnTokenAccount: burnATA,
       }).rpc()
       setSessionBoughtTicketsCount(sessionBoughtTicketsCount + 1)
       setNewTicketNumbers(['', '', '', '', '', '']) // Reset input fields
@@ -326,12 +331,49 @@ export default function Component() {
         seedsMkt,
         program.programId
       )[0];
+      const seedsBurn = [burnId.toArrayLike(Buffer, "le", 8)];
+      const burnPDA = web3.PublicKey.findProgramAddressSync(
+        seedsBurn,
+        program.programId
+      )[0];
+      const tokenPk = new PublicKey(token)
+      const ownerPk = new PublicKey(op)
+      const seedsOp = [opId.toArrayLike(Buffer, "le", 8)];
+      const opPDA = web3.PublicKey.findProgramAddressSync(seedsOp, program.programId)[0]
+      let lotteryATA = await getAssociatedTokenAddress(
+        tokenPk,
+        lotteryPDA,
+        true
+      );
+      let devATA = await getAssociatedTokenAddress(
+        token,
+        dev
+      );
+      let mktATA = await getAssociatedTokenAddress(
+        token,
+        mkt
+      );
+      let burnATA = await getAssociatedTokenAddress(
+        token,
+        burn
+      );
+      let signerATA = await getAssociatedTokenAddress(
+        token,
+        wallet.publicKey
+      );
       try {
-        await program.methods.claimPrize().accounts({
+        await program.methods.claimPrize(lotteryNumber, tokenPk, ownerPk).accounts({
+          signer: wallet.publicKey,
           lotteryInfo: lotteryPDA,
-          user: userPDA,
           dev: devPDA,
-          mkt: mktPDA
+          mkt: mktPDA,
+          op: opPDA,
+          user: userPDA,
+          lotteryTokenAccount: lotteryATA,
+          devTokenAccount: devATA,
+          mktTokenAccount: mktATA,
+          signerTokenAccount: signerATA,
+          burnTokenAccount: burnATA
         }).rpc();
 
         console.log('Successfully claimed prize');

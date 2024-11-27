@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program, BN, web3 } from '@coral-xyz/anchor';
 import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
-import { commitmentLevel, dev, devId, lotteryProgramInterface, mkt, mktId, op, opId } from '../utils/constants';
+import { burn, commitmentLevel, dev, devId, lotteryProgramInterface, mkt, mktId, op, opId } from '../utils/constants';
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
@@ -130,11 +130,11 @@ export default function Component() {
           seedsMkt,
           program.programId
         )[0];
-  
+
 
         let lotteryIdBN = new BN(lotteryIdPick)
         const tokenPk = new PublicKey(tokenPick)
-        const ownerPk =new PublicKey(ownerPick)
+        const ownerPk = new PublicKey(ownerPick)
         const seedsUser = [lotteryIdBN.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer(), tokenPk.toBuffer(), ownerPk.toBuffer()];
         const userPDA = PublicKey.findProgramAddressSync(
           seedsUser,
@@ -173,6 +173,10 @@ export default function Component() {
             tokenPk,
             wallet.publicKey
           );
+          let burnATA = await getAssociatedTokenAddress(
+            tokenPk,
+            burn
+          );
           await program.methods.pickWinner(lotteryNumber, tokenPk, ownerPk, new anchor.BN(entropy), new anchor.BN(batchSize))
             .accounts({
               lotteryInfo: lotteryPDA,
@@ -184,7 +188,7 @@ export default function Component() {
               devTokenAccount: devATA,
               mktTokenAccount: mktATA,
               signerTokenAccount: signerATA,
-              burnTokenAccount: devATA,
+              burnTokenAccount: burnATA,
             })
             .rpc();
 

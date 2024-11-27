@@ -1,5 +1,5 @@
 {
-  "address": "AJdniVjxX2ZzidiwQmmQPwvyj1ZRp9H3zZ3ojcFpoaYF",
+  "address": "E9YzqH8Zb7AUKMELneK1UsejxJS6DkWubJ54DGF2ozjG",
   "metadata": {
     "name": "lottery",
     "version": "0.1.0",
@@ -998,7 +998,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "id",
+            "name": "lottery_id",
             "type": "u64"
           },
           {
@@ -1074,10 +1074,6 @@
           {
             "name": "match_kind",
             "type": "u8"
-          },
-          {
-            "name": "lottery_id",
-            "type": "u64"
           },
           {
             "name": "win_number",
